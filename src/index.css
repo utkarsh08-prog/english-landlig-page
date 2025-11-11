@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations (backup for safety) */
+@keyframes scrollVideos {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
