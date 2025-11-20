@@ -1224,41 +1224,34 @@ export default function LandingPage() {
   const [usedNames, setUsedNames] = React.useState([]);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 600 : false;
   const audioRef = React.useRef(null);
-  const [audioUnlocked, setAudioUnlocked] = React.useState(false);
 
   // Initialize audio once and unlock it on first user interaction (browser autoplay policies)
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio('/ding.mp3');
+      audioRef.current.volume = 0.75;
 
-    audioRef.current = new Audio('/ding.mp3');
-    audioRef.current.preload = 'auto';
-    audioRef.current.volume = 0.6;
-
-    const unlock = () => {
-      if (!audioRef.current) return;
-      // Try to play then pause to unlock audio playback on many browsers
-      const p = audioRef.current.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-      // Pause immediately (if it started)
-      try {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      } catch (e) {}
-      setAudioUnlocked(true);
-      // If a popup is currently visible, play immediately so sound and popup align
-      try {
-        if (audioRef.current && popupName) {
+      const unlockSound = () => {
+        try {
+          // try to play immediately (unlock)
+          const playPromise = audioRef.current.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {});
+          }
+          // pause instantly (do not wait)
+          audioRef.current.pause();
           audioRef.current.currentTime = 0;
-          const pp = audioRef.current.play();
-          if (pp && typeof pp.catch === 'function') pp.catch(() => {});
-        }
-      } catch (e) {}
-      window.removeEventListener('pointerdown', unlock);
-    };
+        } catch (e) {}
 
-    window.addEventListener('pointerdown', unlock, { once: true });
+        // remove listener after unlocking
+        window.removeEventListener("click", unlockSound);
+        window.removeEventListener("touchstart", unlockSound);
+      };
 
-    return () => window.removeEventListener('pointerdown', unlock);
+      // First user interaction unlocks sound
+      window.addEventListener("click", unlockSound, { once: true });
+      window.addEventListener("touchstart", unlockSound, { once: true });
+    }
   }, []);
 
   // Interval to show popups and play the audioRef when available
@@ -1271,9 +1264,9 @@ export default function LandingPage() {
       setUsedNames((prev) => [...prev, randomName]);
       setPopupName(randomName);
 
-      // play sound if audio is ready (or defer until unlocked)
+      // play sound if audio is available
       try {
-        if (audioRef.current && audioUnlocked) {
+        if (audioRef.current) {
           audioRef.current.currentTime = 0;
           const p = audioRef.current.play();
           if (p && typeof p.catch === 'function') p.catch(() => {});
