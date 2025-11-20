@@ -1231,7 +1231,7 @@ export default function LandingPage() {
       audioRef.current = new Audio('/ding.mp3');
       audioRef.current.volume = 0.75;
 
-      const unlockSound = () => {
+      const unlockAudio = () => {
         try {
           // try to play immediately (unlock)
           const playPromise = audioRef.current.play();
@@ -1242,16 +1242,29 @@ export default function LandingPage() {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
         } catch (e) {}
-
-        // remove listener after unlocking
-        window.removeEventListener("click", unlockSound);
-        window.removeEventListener("touchstart", unlockSound);
       };
 
-      // First user interaction unlocks sound
-      window.addEventListener("click", unlockSound, { once: true });
-      window.addEventListener("touchstart", unlockSound, { once: true });
+      // First user interaction unlocks sound (click/touch/pointer)
+      window.addEventListener("click", unlockAudio, { once: true });
+      window.addEventListener("touchstart", unlockAudio, { once: true });
+      window.addEventListener('pointerdown', unlockAudio, { once: true });
+
+      // AUTO - attempt a synthetic click shortly after load to help unlock audio
+      const autoClickTimer = setTimeout(() => {
+        try {
+          const evt = new MouseEvent("click", { view: window, bubbles: true, cancelable: true });
+          window.dispatchEvent(evt);
+        } catch (e) {}
+      }, 150);
+
+      return () => {
+        clearTimeout(autoClickTimer);
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener("click", unlockAudio);
+        window.removeEventListener("touchstart", unlockAudio);
+      };
     }
+    return undefined;
   }, []);
 
   // Interval to show popups and play the audioRef when available
