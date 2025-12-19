@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Point to the sitemap for search engines
+Sitemap: https://arunlive.com/sitemap.xml
+Host: arunlive.com

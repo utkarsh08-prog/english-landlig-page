@@ -8,3 +8,108 @@
   100% { transform: translateX(-50%); }
 }
 
+
+/* Fade animation for small popups */
+@keyframes fadeAnim {
+  0% { opacity: 0; transform: translateY(20px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(20px); }
+}
+.animate-fade {
+  animation: fadeAnim 4s ease-in-out;
+}
+
+/* Added fadeInOut animation used by JoinPopup */
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+.animate-fade-in-out {
+  animation: fadeInOut 4s ease-in-out forwards;
+}
+
+
+/* Premium glowing, slow animated fill for sold-out progress bar */
+.soldProgress {
+  background: linear-gradient(90deg, #ffd75a, #ffbe00, #ffdd66);
+  animation: soldGlow 2s infinite ease-in-out;
+  box-shadow: 0 0 10px rgba(255, 200, 0, 0.6);
+}
+
+@keyframes soldGlow {
+  0%   { filter: brightness(1) drop-shadow(0 0 6px rgba(255,225,100,0.5)); }
+  50%  { filter: brightness(1.2) drop-shadow(0 0 12px rgba(255,225,100,0.8)); }
+  100% { filter: brightness(1) drop-shadow(0 0 6px rgba(255,225,100,0.5)); }
+}
+
+/* SoldOutBar sticky container styles */
+.soldout-bar-container {
+  backdrop-filter: blur(6px);
+}
+
+.soldout-bar-container.fixed {
+  animation: stickyGlow 0.3s ease-in-out;
+}
+
+@keyframes stickyGlow {
+  0% { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 18px rgba(255, 215, 0, 0.55); }
+}
+
+/* Global CTA animations used by RegisterButton and other CTAs */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 15px rgba(255, 200, 0, 0.6); }
+  50% { box-shadow: 0 0 30px rgba(255, 200, 0, 1); }
+  100% { box-shadow: 0 0 15px rgba(255, 200, 0, 0.6); }
+}
+.animate-pulseGlow { animation: pulseGlow 2s infinite ease-in-out; }
+
+@keyframes shine {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+.animate-shine { animation: shine 2.5s infinite; }
+
+@keyframes arrowMove {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+.animate-arrowMove { animation: arrowMove 1.2s infinite ease-in-out; }
+
+@keyframes priceBlink {
+  0%, 100% { background: #000; color: #FFD700; }
+  50% { background: #FFD700; color: #000; }
+}
+.animate-priceBlink { animation: priceBlink 1.5s infinite; }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1.05); }
+  50% { transform: rotate(2deg) scale(1.08); }
+}
+.animate-wiggle { animation: wiggle 0.4s ease-in-out; }
+
+/* Small blinking red dot used in sold-out strip */
+@keyframes blinkDot {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.blink-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #e11d48; /* red-600 */
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: blinkDot 1s infinite ease-in-out;
+}
+
+
+
+

@@ -1,9 +1,16 @@
 // Refactor: structured into reusable components, unified buttons, custom hooks, and clearer layout
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Target, Layers, TrendingUp, Users, Lightbulb, CheckCircle } from "lucide-react";
 import RegisterButton from "./RegisterButton";
 import Loader from "./components/Loader";
+import AppLoader from "./components/AppLoader";
+import SoldOutBar from "./components/SoldOutBar";
+import FeaturedCarousel from "./components/FeaturedCarousel";
+import StickySoldTimer from "./components/StickySoldTimer";
+import useSoldOutProgress from "./hooks/useSoldOutProgress";
+import GuaranteePopup from "./components/GuaranteePopup";
 
 // Shared random names list used for 'just joined' popups across the site
 const names = [
@@ -132,6 +139,33 @@ function useLiveViewers(elementId) {
   }, [elementId]);
 }
 
+// Welcome popup shown on first visit or when desired
+function WelcomePopup({ onContinue }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[999999]">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md mx-auto text-center border border-yellow-400">
+        
+        <h2 className="text-2xl font-bold text-yellow-700 mb-4">
+          Welcome Entrepreneur 🚀
+        </h2>
+
+        <p className="text-zinc-700 mb-6 text-lg font-medium">
+          "Innovate constantly. Quality is the promise, 
+          <br /> but growth is the journey powered by relentless improvement."
+        </p>
+
+        <button
+          onClick={onContinue}
+          className="bg-gradient-to-r from-yellow-300 to-yellow-500 px-8 py-3 rounded-xl font-semibold text-black shadow-lg hover:scale-105 transition-all animate-buttonGlow"
+        >
+          Continue
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
 /*********************************
  * Small Components
  *********************************/
@@ -149,9 +183,19 @@ function ExitPopup() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // Don't show again if the user already dismissed it once.
+    try {
+      if (localStorage.getItem("exitPopupDismissed")) return;
+    } catch (e) {}
+
     const handler = (e) => {
+      try {
+        if (localStorage.getItem("exitPopupDismissed")) return;
+      } catch (e) {}
+
       if (e.clientY < 10) setOpen(true);
     };
+
     window.addEventListener("mousemove", handler);
     return () => window.removeEventListener("mousemove", handler);
   }, []);
@@ -166,7 +210,15 @@ function ExitPopup() {
           Your ₹99 Guidance session is still available. Don't miss this chance!
         </p>
         <div className="mt-4 flex justify-center gap-4">
-          <PrimaryButton label="Continue" onClick={() => setOpen(false)} />
+          <PrimaryButton
+            label="Continue"
+            onClick={() => {
+              try {
+                localStorage.setItem("exitPopupDismissed", "1");
+              } catch (e) {}
+              setOpen(false);
+            }}
+          />
           <RegisterButton
             amount={99}
             label="Register Now"
@@ -276,7 +328,7 @@ const JoinPopup = ({ name, isMobile }) => (
   </div>
 );
 
-function Hero({ parallaxY }) {
+function Hero({ parallaxY, heading, subline, ctaLabel }) {
   return (
     <section
       className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 bg-white relative overflow-hidden"
@@ -301,7 +353,7 @@ function Hero({ parallaxY }) {
         transition={{ duration: 0.6 }}
         className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-yellow-700 max-w-4xl leading-tight"
       >
-        Transform Your Business With Personal 1-on-1 Guidance
+        {heading}
       </motion.h1>
 
       {/* Subline */}
@@ -311,14 +363,14 @@ function Hero({ parallaxY }) {
         transition={{ delay: 0.3, duration: 0.6 }}
         className="text-lg md:text-2xl text-zinc-700 mt-4 max-w-2xl"
       >
-        Get clarity, strategy & direction tailored exactly for YOUR business.
+        {subline}
       </motion.p>
 
       {/* Stats */}
       <StatsStrip />
 
       {/* CTA Button */}
-      <PrimaryButton className="mt-12" />
+      <PrimaryButton className="mt-12" label={ctaLabel} />
     </section>
   );
 }
@@ -402,7 +454,7 @@ const SuccessMarquee = () => {
   const joined = useJoinCounter();
 
   return (
-    <div className="w-full bg-transparent py-3 text-center text-yellow-800 font-semibold text-sm md:text-base border-t border-yellow-300 overflow-hidden">
+    <div className="w-full bg-transparent py-6 mt-6 text-yellow-800 font-semibold text-sm md:text-base border-t border-yellow-300 overflow-hidden text-center">
       <span className="inline-block animate-marquee2">
         🚀 {joined} Entrepreneurs Joined • 98% Satisfaction • Last Registration 3 Minutes Ago
       </span>
@@ -413,14 +465,14 @@ const SuccessMarquee = () => {
 /*********************************
  * SESSION EXPLAINER
  *********************************/
-function SessionExplainer({ miniMinutes, miniSeconds }) {
+function SessionExplainer({ miniMinutes, miniSeconds, sessionHeading }) {
   return (
     <section className="py-20 px-6 bg-white text-black" data-testid="coach-intro">
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
         
         {/* Bullet Points */}
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-yellow-200">
-          <h2 className="text-2xl font-bold mb-4">What Happens In Your 1-on-1 Session?</h2>
+          <h2 className="text-2xl font-bold mb-4">{sessionHeading}</h2>
 
           <ul className="space-y-3 text-zinc-600 text-lg">
             <li>● You Get <span className="font-semibold text-yellow-800">Personal Attention</span> on your exact business challenges</li>
@@ -482,24 +534,99 @@ function SessionExplainer({ miniMinutes, miniSeconds }) {
 
 export { StatsStrip };
 /*********************************
- * FEATURED LOGOS
- *********************************/
+ * FEATURED LOGOS – PREMIUM CAROUSEL
+*********************************/
 function FeaturedLogos() {
+  // Apni 8 images yahan add karo (file names tum apne hisaab se rakh sakte ho)
+  const images = [
+    "/featured1.jpg",
+    "/featured2.jpg",
+    "/featured3.jpg",
+    "/featured4.jpg",
+    "/featured5.jpg",
+    "/featured6.jpg",
+    "/featured7.jpg",
+    "/featured8.jpg",
+  ];
+
+  const [current, setCurrent] = React.useState(0);
+
+  const next = () => setCurrent((prev) => (prev + 1) % images.length);
+  const prev = () =>
+    setCurrent((prev) => (prev - 1 + images.length) % images.length);
+
+  // Auto-slide
+  React.useEffect(() => {
+    const id = setInterval(next, 4000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <section
-      className="py-16 text-center bg-black text-black border-t border-yellow-200"
+      className="py-16 bg-black border-t border-yellow-200"
       data-testid="featured"
     >
-      <h2 className="text-3xl md:text-4xl font-bold mb-6 text-yellow-700">Featured In</h2>
+      <div className="max-w-5xl mx-auto relative px-6">
+        {/* Floating heading placed above the carousel (centered) */}
+        <h2 className="absolute -top-8 left-1/2 -translate-x-1/2 text-lg md:text-3xl font-bold text-yellow-400 z-20">
+          Featured In
+        </h2>
+        {/* Outer Glow */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(255,215,80,0.28),transparent_70%)]" />
 
-      {/* Featured image */}
-      <div className="flex flex-wrap justify-center gap-10 opacity-90 text-lg font-semibold tracking-wide">
-        <img
-          src="./featured.png"
-          alt="Featured in"
-          className="mx-auto w-full max-w-3xl h-auto object-contain"
-          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-        />
+        {/* Slider */}
+        <div className="overflow-hidden rounded-3xl border border-yellow-500/40 bg-zinc-950/70 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
+          <div
+            className="flex transition-transform duration-700 ease-out"
+            style={{ transform: `translateX(-${current * 100}%)` }}
+          >
+            {images.map((src, idx) => (
+              <div
+                key={idx}
+                className="min-w-full flex justify-center items-center py-10 px-6"
+              >
+                <div className="w-full max-w-3xl aspect-[16/7] bg-zinc-900/80 rounded-2xl overflow-hidden flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.7)]">
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Left / Right controls */}
+          <button
+            onClick={prev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg hover:scale-110 transition"
+          >
+            ◀
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg hover:scale-110 transition"
+          >
+            ▶
+          </button>
+
+          {/* Dots */}
+          <div className="flex justify-center gap-2 mt-4 mb-3">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className={`h-1.5 w-6 rounded-full ${
+                  i === current ? "bg-yellow-400" : "bg-zinc-600"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -716,12 +843,12 @@ function Bonuses() {
               id: 3,
               img: "/bonus3.png",
               title: "Business Automation PowerKit",
-              subtitle: "Systemize your operations and reduce manual workload effortlessly.",
+              subtitle: " Systematize your operations and reduce manual workload effortlessly.",
             },
             {
               id: 4,
               img: "/bonus4.png",
-              title: "Funding Raising PowerKit",
+              title: "Fund Raising PowerKit",
               subtitle: "A step-by-step playbook to prepare, pitch & secure business funding.",
             },
             {
@@ -810,7 +937,7 @@ function CTA() {
         transition={{ delay: 0.3, duration: 0.6 }}
         className="text-lg md:text-2xl text-zinc-700 max-w-3xl mx-auto"
       >
-        Book your 1-on-1 session and get personalised Guidance built only for your business.
+        Book your 1-on-1 session and get personalized Guidance built only for your business.
       </motion.p>
     </section>
   );
@@ -867,7 +994,7 @@ function OfferShowcase({ miniMinutes, miniSeconds }) {
 function CoachStats() {
   const stats = [
     ["16", "Years of Experience"],
-    ["60M", "Entrepreneurs Reached"],
+    ["1M", "Entrepreneurs Reached"],
     ["500+", "Seminars Conducted"],
     ["600K", "Followers"],
     ["2,400", "Paid Customers"],
@@ -913,6 +1040,7 @@ function CoachStats() {
 function Guarantee() {
   return (
     <section
+      id="guarantee-section"
       className="py-20 px-6 bg-white text-black border-t border-yellow-200"
       data-testid="guarantee"
     >
@@ -1128,8 +1256,8 @@ function VideoTestimonials() {
  *********************************/
 function FAQ() {
   const list = [
-    { q: "Is this a 1-on-1 session?", a: "Yes. This is a personalised Guidance session where only you & the coach are present." },
-    { q: "What happens in the session?", a: "You get personalised clarity, custom strategies, and a Roadmap." },
+    { q: "Is this a 1-on-1 session?", a: "Yes. This is a personalized Guidance session where only you & the coach are present." },
+    { q: "What happens in the session?", a: "You get personalized clarity, custom strategies, and a Roadmap." },
     { q: "Do I need to prepare?", a: "Yes. After registration, you'll receive a short form for details." },
     { q: "Can I reschedule?", a: "Yes, once if informed 24 hours in advance." },
     { q: "Will you help with exact problems?", a: "Absolutely. Everything is business-specific." },
@@ -1186,8 +1314,8 @@ function PrivacyFooter() {
 function StickyOfferBar({ timeLeft, format }) {
   return (
     <div
-      className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md text-black py-4 px-6 flex flex-col 
-      sm:flex-row gap-3 sm:gap-6 sm:justify-between sm:items-center z-50 shadow-[0_0_20px_rgba(0,0,0,0.1)] border-t border-yellow-300"
+      className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md text-black py-2 px-4 flex flex-col 
+      sm:flex-row gap-2 sm:gap-6 sm:justify-between sm:items-center z-50 shadow-[0_0_20px_rgba(0,0,0,0.1)] border-t border-yellow-300"
     >
       <div className="flex items-center gap-3">
         <span className="text-base sm:text-lg font-bold text-yellow-700">Today's Price:</span>
@@ -1203,8 +1331,89 @@ function StickyOfferBar({ timeLeft, format }) {
       </div>
 
       <RegisterButton className={
-        "px-8 py-3 md:px-12 md:py-4 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold text-sm md:text-base rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition"
+        "px-6 py-2 sm:px-8 sm:py-3 text-sm sm:text-sm bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition"
       } />
+    </div>
+  );
+}
+
+/*********************************
+ * SCROLL END POPUP
+ *********************************/
+function ScrollEndPopup() {
+  const [show, setShow] = React.useState(false);
+
+  React.useEffect(() => {
+    try {
+      if (localStorage.getItem("scrollEndDismissed")) return;
+    } catch (e) {}
+
+      const handleScroll = () => {
+      try {
+        if (localStorage.getItem("scrollEndDismissed")) return;
+      } catch (e) {}
+
+      const scrollPos = window.innerHeight + window.scrollY;
+      const pageHeight = document.body.offsetHeight;
+
+      // Only trigger when user reaches the very end of the page (within 50px)
+      // Avoid triggering on short pages where pageHeight <= window.innerHeight
+      if (pageHeight <= window.innerHeight) return;
+
+      const remaining = pageHeight - scrollPos;
+      if (remaining <= 50) {
+        setShow(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] flex justify-center items-center">
+      <div className="bg-white p-6 md:p-10 w-[90%] max-w-md rounded-2xl shadow-2xl border border-yellow-300 text-center animate-fade-in-up">
+        
+        <h2 className="text-2xl font-bold text-yellow-700 mb-3">
+          You're Almost There!
+        </h2>
+
+        <p className="text-zinc-700 text-base mb-6 font-medium leading-relaxed">
+          Successful entrepreneurs take action.  
+          Today, your business deserves <span className="text-yellow-600 font-semibold">clarity & transformation.</span>
+        </p>
+
+        <RegisterButton
+          amount={99}
+          label={"Start Your Journey @ ₹99"}
+          className="px-8 py-4 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold text-base rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 animate-buttonGlow"
+        />
+
+        <button
+          onClick={() => {
+            try {
+              localStorage.setItem("scrollEndDismissed", "1");
+            } catch (e) {}
+            setShow(false);
+          }}
+          className="block mt-4 mx-auto text-sm text-zinc-500 hover:text-black"
+        >
+          ✕ Close
+        </button>
+      </div>
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fadeInUp {
+          0% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
@@ -1218,42 +1427,188 @@ export default function LandingPage() {
 
   const { timeLeft, format, miniMinutes, miniSeconds } = useOfferTimer();
 
+  // (removed useStickyTimerBar) StickySoldTimer uses its own scroll logic
+
+  // use shared hook for sold percentage (reads/writes localStorage 'soldOutPercent')
+  const soldOutPercent = useSoldOutProgress();
+
+  // global loading overlay state (listens to window.globalLoading events)
+  const [globalLoading, setGlobalLoading] = React.useState(false);
+  React.useEffect(() => {
+    const handler = (e) => {
+      try {
+        setGlobalLoading(!!e.detail);
+      } catch {
+        setGlobalLoading(false);
+      }
+    };
+    window.addEventListener("globalLoading", handler);
+    return () => window.removeEventListener("globalLoading", handler);
+  }, []);
+
   // Popup logic: show a random unused name periodically with sound
   const joinNames = names;
   const [popupName, setPopupName] = React.useState(null);
   const [usedNames, setUsedNames] = React.useState([]);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 600 : false;
   const audioRef = React.useRef(null);
-  // Initialize audio once and unlock it
+  // Welcome popup state (shows before all sections)
+  const [showWelcome, setShowWelcome] = React.useState(true);
+
+  // Guarantee popup state (opens once when guarantee section enters view)
+  const [showGuaranteePopup, setShowGuaranteePopup] = React.useState(false);
+
+  // Remote content binding (fetch sections from admin backend)
+  const [heroHeading, setHeroHeading] = React.useState(
+    "Transform Your Business With Personal 1-on-1 Guidance"
+  );
+  const [heroSubline, setHeroSubline] = React.useState(
+    "Get clarity, strategy & direction tailored exactly for YOUR business."
+  );
+  const [ctaLabel, setCtaLabel] = React.useState(undefined);
+  const [sessionHeading, setSessionHeading] = React.useState(
+    "What Happens In Your 1-on-1 Session?"
+  );
+
   React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((sections) => {
+        if (!Array.isArray(sections)) return;
+        // Prefer main heading and subheading from the 'header' section if present (admin stores page heading there)
+        const header = sections.find((s) => s.key === "header");
+        if (header) {
+          if (header.extraData?.mainHeading) setHeroHeading(header.extraData.mainHeading);
+          // prefer explicit pageSubheading, then subText
+          if (header.extraData?.pageSubheading) setHeroSubline(header.extraData.pageSubheading);
+          else if (header.extraData?.subText) setHeroSubline(header.extraData.subText);
+        }
+
+        const hero = sections.find((s) => s.key === "hero");
+        if (hero) {
+          // hero.title may be used as fallback if header.mainHeading is not set
+          if (hero.title && !header?.extraData?.mainHeading) setHeroHeading(hero.title);
+          // only use hero.subtitle if header didn't supply a subline
+          if (hero.subtitle && !header?.extraData?.pageSubheading && !header?.extraData?.subText) setHeroSubline(hero.subtitle);
+          // CTA text may be in extraData or content
+          const cta = hero.extraData?.ctaText || hero.extraData?.buttonText || hero.content;
+          if (cta) setCtaLabel(cta);
+        }
+
+        // Session heading: allow override from header.extraData or a dedicated session/coach section
+        if (header?.extraData?.sessionHeading) {
+          setSessionHeading(header.extraData.sessionHeading);
+        } else {
+          const sessionSection = sections.find((s) => ["session", "coach", "coach-intro", "session_explainer", "coach_intro"].includes(s.key));
+          if (sessionSection && sessionSection.title) setSessionHeading(sessionSection.title);
+        }
+      })
+      .catch((err) => {
+        // non-fatal: keep defaults
+        console.warn("Failed to fetch admin sections:", err.message || err);
+      });
+  }, []);
+
+  const handleWelcomeContinue = () => {
+    setShowWelcome(false);
+  };
+  // Initialize audio once and unlock on first user interaction
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     audioRef.current = new Audio('/ding.mp3');
     audioRef.current.volume = 0.6;
 
+    // Unlock audio on any first user action (touch, click, scroll, keypress)
     const unlockAudio = () => {
       if (!audioRef.current) return;
-      const playPromise = audioRef.current.play();
-
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
+      try {
+        audioRef.current.play().then(() => {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
         }).catch(() => {});
-      }
-
+      } catch {}
       window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('scroll', unlockAudio);
     };
 
-    // 🔥 AUTO - ONE TIME CLICK to unlock sound
-    setTimeout(() => {
-      const evt = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
-      window.dispatchEvent(evt);
-    }, 150); // small delay so browser thinks page interacted
-
     window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+    window.addEventListener('scroll', unlockAudio, { once: true });
 
-    return () => window.removeEventListener('pointerdown', unlockAudio);
+    // 🔥 Fake user interaction hack to unlock audio (mousemove/touchstart)
+    const simulateClick = () => {
+      try {
+        const evt = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        });
+        window.dispatchEvent(evt);
+
+        // Try playing then pausing to unlock audio
+        const p = audioRef.current && audioRef.current.play && audioRef.current.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+      } catch (e) {}
+
+      // Remove listener after first fake trigger
+      window.removeEventListener('mousemove', simulateClick);
+      window.removeEventListener('touchstart', simulateClick);
+    };
+
+    // 🔥 Trigger automatically (first movement is enough)
+    window.addEventListener('mousemove', simulateClick);
+    window.addEventListener('touchstart', simulateClick);
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('scroll', unlockAudio);
+      window.removeEventListener('mousemove', simulateClick);
+      window.removeEventListener('touchstart', simulateClick);
+    };
+  }, []);
+
+  // Show guarantee popup once when the Guarantee section is in view
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const target = document.getElementById("guarantee-section");
+      if (!target) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              if (!localStorage.getItem("popup_triggered")) {
+                setShowGuaranteePopup(true);
+                try { localStorage.setItem("popup_triggered", "yes"); } catch (e) {}
+              }
+            }
+          });
+        },
+        { threshold: 0.5 }
+      );
+
+      observer.observe(target);
+      return () => observer.disconnect();
+    } catch (e) {
+      return undefined;
+    }
   }, []);
 
   // Interval to show popups and play the audioRef when available
@@ -1285,15 +1640,22 @@ export default function LandingPage() {
 
   return (
     <>
-      <ProgressBar />
-      <ExitPopup />
+        <ProgressBar />
+        <ExitPopup />
+        <AppLoader loading={globalLoading} />
 
-  <div className="min-h-screen w-full bg-white text-black font-sans relative pt-6 pb-12 md:pb-12">
+        {showWelcome && <WelcomePopup onContinue={handleWelcomeContinue} />}
+
+      {/* top sticky sold timer — shows when user scrolls (component has internal scroll listener) */}
+      <StickySoldTimer timeLeft={timeLeft} format={format} sold={soldOutPercent} />
+
+      <div className="min-h-screen w-full bg-white text-black font-sans relative pt-6 pb-28 sm:pb-12 md:pb-12">
+        <h1 className="sr-only">Arunn Guptaa — Business Growth Coach</h1>
         {/* Background Glow */}
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12),transparent_60%)] animate-pulse" />
 
         {/* Header Image */}
-  <div className="w-full flex justify-center mt-4 mb-6 bg-transparent">
+        <div className="w-full flex justify-center mt-4 mb-6 bg-transparent">
           <img
             src="./logo.png"
             alt="Session Banner"
@@ -1303,10 +1665,16 @@ export default function LandingPage() {
         </div>
 
         <LiveTodayBanner />
-        <Hero parallaxY={parallaxY} />
+        <Hero parallaxY={parallaxY} heading={heroHeading} subline={heroSubline} ctaLabel={ctaLabel} />
         <SuccessMarquee />
-        <SessionExplainer miniMinutes={miniMinutes} miniSeconds={miniSeconds} />
-        <FeaturedLogos />
+
+        {/* Sold out progress bar (dynamic) */}
+        <SoldOutBar />
+        
+        <section id="timerSection">
+          <SessionExplainer miniMinutes={miniMinutes} miniSeconds={miniSeconds} sessionHeading={sessionHeading} />
+        </section>
+        <FeaturedCarousel />
         <TransformGraph />
         <LearnSection />
         <FeaturesGrid />
@@ -1319,9 +1687,27 @@ export default function LandingPage() {
         <Guarantee />
         <VideoTestimonials />
         <FAQ />
+
+        {/* Register CTA under FAQ */}
+        <section className="py-12 bg-yellow-50 px-6 border-t border-yellow-200 text-center">
+          <div className="max-w-3xl mx-auto">
+            <h3 className="text-2xl md:text-3xl font-bold text-yellow-700 mb-3">Ready For Personal 1-on-1 Guidance?</h3>
+            <p className="text-zinc-700 mb-6">Reserve your private session now — limited seats available.</p>
+            <RegisterButton
+              amount={99}
+              label={"Register Now @ ₹99"}
+              className={"px-10 py-4 text-black font-extrabold text-lg rounded-3xl bg-gradient-to-r from-[#FFD700] to-[#FFB300] shadow-[0_0_18px_rgba(255,200,0,0.7)] hover:shadow-[0_0_30px_rgba(255,200,0,1)] transition-all duration-300"}
+            />
+          </div>
+        </section>
+        <ScrollEndPopup />
         <PrivacyFooter />
         <StickyOfferBar timeLeft={timeLeft} format={format} />
       </div>
+
+      {showGuaranteePopup && (
+        <GuaranteePopup onClose={() => setShowGuaranteePopup(false)} />
+      )}
 
       {popupName && (
         <div className={`fixed ${isMobile ? "top-4 left-1/2 -translate-x-1/2" : "bottom-24 right-4"} z-[9999] bg-white px-4 py-2 rounded-xl shadow-lg border border-yellow-300 text-sm text-black animate-fade-in-out`}>

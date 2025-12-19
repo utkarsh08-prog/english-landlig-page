@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Failed</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-white text-black">
+
+  <div class="min-h-screen flex flex-col justify-center items-center px-6 text-center">
+
+    <div class="bg-white border border-red-300 rounded-3xl shadow-2xl p-10 max-w-xl">
+
+      <div class="flex justify-center mb-6">
+        <div class="h-24 w-24 bg-red-500 rounded-full flex items-center justify-center shadow-xl">
+          <svg class="h-14 w-14 text-white" fill="none" stroke="currentColor" stroke-width="3"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-bold text-red-600 mb-3">
+        Payment Failed
+      </h1>
+
+      <p class="text-zinc-600 text-lg mb-6">
+        Something went wrong while processing your payment. Please try again.
+      </p>
+
+      <div class="bg-red-50 border border-red-300 p-4 rounded-xl mb-6">
+        <p class="font-semibold text-red-700">
+          ⚠️ You were NOT charged. Your slot is not confirmed.
+        </p>
+      </div>
+
+      <a href="/"
+        class="px-10 py-4 bg-yellow-400 text-black font-bold rounded-2xl shadow-lg hover:scale-105 transition">
+        Try Again
+      </a>
+
+    </div>
+  </div>
+
+</body>
+</html>
