@@ -748,9 +748,9 @@ function SessionExplainer({ miniMinutes, miniSeconds }) {
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-yellow-200">
           <h2 className="text-2xl font-bold mb-4">{sessionData.heading}</h2>
 
-          <ul className="space-y-3 text-zinc-600 text-lg">
+          <ul className="space-y-3 text-zinc-600 text-lg list-none">
             {sessionData.bullets.map((bullet, idx) => (
-              <li key={idx}>● {bullet}</li>
+              <li key={idx}>{bullet}</li>
             ))}
           </ul>
         </div>
