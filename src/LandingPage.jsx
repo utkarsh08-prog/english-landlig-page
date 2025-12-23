@@ -1291,7 +1291,7 @@ function ReviewMarquee() {
 
       <div className="max-w-4xl mx-auto overflow-hidden">
         <div className="flex gap-10 whitespace-normal text-lg" style={{ color: content.textColor }}>
-          <div className="w-full text-center">“{content.subheading}”</div>
+          <div className="w-full text-center" dangerouslySetInnerHTML={{ __html: `"${content.subheading.replace(/\n/g, '<br />')}"` }} />
         </div>
       </div>
     </section>
