@@ -2041,7 +2041,7 @@ function FinalCTA() {
           heading: extra.heading || prev.heading,
           subheading: extra.subheading || prev.subheading,
           buttonText: extra.buttonText || prev.buttonText,
-          buttonBadge: extra.buttonBadge || prev.buttonBadge,
+          buttonBadge: extra.buttonBadge !== undefined ? extra.buttonBadge : prev.buttonBadge,
           amount: extra.amount !== undefined ? extra.amount : prev.amount,
           bgColor: extra.bgColor || prev.bgColor,
           headingColor: extra.headingColor || prev.headingColor,
