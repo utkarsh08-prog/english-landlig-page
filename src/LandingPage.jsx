@@ -1776,9 +1776,10 @@ function Guarantee() {
         </h2>
 
         {data.bodyParagraphs[0] && (
-          <p className="text-center text-zinc-600 max-w-2xl mx-auto mb-8">
-            {data.bodyParagraphs[0]}
-          </p>
+          <p
+            className="text-center text-zinc-600 max-w-2xl mx-auto mb-8"
+            dangerouslySetInnerHTML={{ __html: data.bodyParagraphs[0].replace(/\n/g, '<br />') }}
+          />
         )}
 
         <h3 className="text-2xl font-bold text-center text-orange-400 mb-2">
