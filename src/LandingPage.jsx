@@ -2067,6 +2067,7 @@ function FinalCTA() {
             amount={data.amount}
             label={data.buttonText}
             className={data.buttonClassName}
+            hideBadge={true}
           />
         </div>
       </div>
