@@ -2017,6 +2017,7 @@ function FinalCTA() {
     heading: "Ready For Personal 1-on-1 Guidance?",
     subheading: "Reserve your private session now — limited seats available.",
     buttonText: "Register Now @ ₹99",
+    buttonBadge: "Limited",
     amount: 99,
     bgColor: "bg-yellow-50",
     headingColor: "text-yellow-700",
@@ -2040,6 +2041,7 @@ function FinalCTA() {
           heading: extra.heading || prev.heading,
           subheading: extra.subheading || prev.subheading,
           buttonText: extra.buttonText || prev.buttonText,
+          buttonBadge: extra.buttonBadge || prev.buttonBadge,
           amount: extra.amount !== undefined ? extra.amount : prev.amount,
           bgColor: extra.bgColor || prev.bgColor,
           headingColor: extra.headingColor || prev.headingColor,
@@ -2055,11 +2057,18 @@ function FinalCTA() {
       <div className="max-w-3xl mx-auto">
         <h3 className={`text-2xl md:text-3xl font-bold ${data.headingColor} mb-3`}>{data.heading}</h3>
         <p className={`${data.subheadingColor} mb-6`}>{data.subheading}</p>
-        <RegisterButton
-          amount={data.amount}
-          label={data.buttonText}
-          className={data.buttonClassName}
-        />
+        <div className="inline-block relative">
+          {data.buttonBadge && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+              {data.buttonBadge}
+            </span>
+          )}
+          <RegisterButton
+            amount={data.amount}
+            label={data.buttonText}
+            className={data.buttonClassName}
+          />
+        </div>
       </div>
     </section>
   );
