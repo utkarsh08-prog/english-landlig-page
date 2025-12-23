@@ -1414,40 +1414,98 @@ function CTA() {
  * OFFER SHOWCASE
  *********************************/
 function OfferShowcase({ miniMinutes, miniSeconds }) {
+  const [data, setData] = React.useState({
+    heading: "1-on-1 Coaching Session (Today Only)",
+    headingColor: "#B15B00",
+    cardBg: "#ffffff",
+    cardBorder: "#F3E0B0",
+    oldPrice: "₹9999",
+    price: "₹99",
+    note:
+      "Start your session for just ₹99, Today. If the session genuinely helps you, you pay the remaining ₹900 after the session.",
+    refundLine:
+      "If not satisfied, request a refund within 1 Hour of session — no questions asked.",
+    ctaText: "Book Your Slot for ₹99",
+    ctaBadge: "Limited",
+    ctaBg: "#F59E0B",
+    ctaTextColor: "#111827",
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/pricing_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+
+        const pricingCard = extra.pricingCard || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || section.title || prev.heading,
+          headingColor: extra.headingColor || prev.headingColor,
+          cardBg: extra.cardBg || prev.cardBg,
+          cardBorder: extra.cardBorder || prev.cardBorder,
+          oldPrice: pricingCard.oldPrice || prev.oldPrice,
+          price: pricingCard.price || prev.price,
+          note: pricingCard.note || extra.pricingNote || prev.note,
+          refundLine: extra.refundLine || prev.refundLine,
+          ctaText: pricingCard.ctaText || prev.ctaText,
+          ctaBadge: pricingCard.ctaBadge || prev.ctaBadge,
+          ctaBg: pricingCard.ctaBg || prev.ctaBg,
+          ctaTextColor: pricingCard.ctaTextColor || prev.ctaTextColor,
+        }));
+      })
+      .catch((err) => console.warn("Pricing section fetch failed:", err));
+  }, []);
+
   return (
     <section className="py-8 bg-white text-black px-6 text-center" id="pricing">
-      <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl border border-yellow-300 p-6 relative">
-        
+      <div
+        className="max-w-3xl mx-auto rounded-3xl shadow-xl border p-6 relative"
+        style={{ background: data.cardBg, borderColor: data.cardBorder }}
+      >
         {/* Soft glow background */}
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(255,235,130,0.35),transparent_70%)] rounded-3xl" />
 
         {/* Title */}
-        <h2 className="text-3xl md:text-4xl font-extrabold text-yellow-700 mb-3">
-          1-on-1 Coaching Session (Today Only)
+        <h2
+          className="text-3xl md:text-4xl font-extrabold mb-3"
+          style={{ color: data.headingColor }}
+        >
+          {data.heading}
         </h2>
 
         {/* Pricing Row */}
         <div className="flex justify-center items-end gap-4 mt-6">
-          <span className="diag-strike text-2xl text-zinc-500">₹9999</span>
-          <span className="text-6xl font-extrabold text-yellow-600">₹99</span>
+          <span className="diag-strike text-2xl text-zinc-500">{data.oldPrice}</span>
+          <span className="text-6xl font-extrabold text-yellow-600">{data.price}</span>
         </div>
 
-        {/* Smart Explanation – short & classy */}
-        <p className="mt-4 text-zinc-700 text-lg font-medium max-w-lg mx-auto">
-          Start your session for <span className="font-bold text-yellow-700">just ₹99, Today.</span> If the session genuinely helps you, you pay the remaining <span className="font-bold text-yellow-700">₹900 after the session.</span>
-        </p>
+        {/* Smart Explanation – supports admin HTML */}
+        <div
+          className="mt-4 text-zinc-700 text-lg font-medium max-w-lg mx-auto"
+          dangerouslySetInnerHTML={{ __html: data.note }}
+        />
 
         {/* Short clarity line */}
-        <p className="text-sm text-zinc-600 mt-4">
-          If not satisfied, request a refund within 1 Hour of session — no questions asked.
-        </p>
+        {data.refundLine && (
+          <p className="text-sm text-zinc-600 mt-4">{data.refundLine}</p>
+        )}
 
         {/* CTA */}
         <div className="mt-8">
           <PrimaryButton
             amount={99}
-            label={"Book Your Slot for ₹99"}
-            className={"relative px-8 py-4 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold text-base rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 animate-buttonGlow"}
+            label={data.ctaText}
+            className={
+              "relative px-8 py-4 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold text-base rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 animate-buttonGlow"
+            }
           />
         </div>
 
