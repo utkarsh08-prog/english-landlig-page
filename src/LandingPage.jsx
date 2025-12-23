@@ -1231,56 +1231,64 @@ function ReviewMarquee() {
  * BONUSES
  *********************************/
 function Bonuses() {
+  const [data, setData] = React.useState({
+    heading: "Additional Support You'll Receive",
+    headingColor: "#B67B09",
+    cardBg: "#FFFFFF",
+    cardBorder: "#E7C36B",
+    cards: [
+      { id: 1, imageDataUrl: "", img: "/bonus1.png", title: "Employee Retention PowerKit", subtitle: "A proven toolkit to keep your best employees loyal, motivated & long-term." },
+      { id: 2, imageDataUrl: "", img: "/bonus2.png", title: "Branch / Franchise Expansion PowerKit", subtitle: "Your strategic blueprint to scale confidently into new locations." },
+      { id: 3, imageDataUrl: "", img: "/bonus3.png", title: "Business Automation PowerKit", subtitle: "Systematize your operations and reduce manual workload effortlessly." },
+      { id: 4, imageDataUrl: "", img: "/bonus4.png", title: "Fund Raising PowerKit", subtitle: "A step-by-step playbook to prepare, pitch & secure business funding." },
+      { id: 5, imageDataUrl: "", img: "/bonus5.png", title: "Export–Import Launch PowerKit", subtitle: "A practical guide to start, manage & grow your export–import journey." },
+      { id: 6, imageDataUrl: "", img: "/bonus6.png", title: "Growth Diagnosis PowerKit", subtitle: "Identify bottlenecks, fix hidden gaps & unlock fast business growth." },
+    ],
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/power_kits`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        const extra = section?.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          headingColor: extra.headingColor || prev.headingColor,
+          cardBg: extra.cardBg || prev.cardBg,
+          cardBorder: extra.cardBorder || prev.cardBorder,
+          cards: Array.isArray(extra.cards) && extra.cards.length ? extra.cards.map((c, i) => ({
+            id: c.id || i + 1,
+            imageDataUrl: c.imageDataUrl || "",
+            img: prev.cards[i]?.img || "",
+            title: c.title || prev.cards[i]?.title || "",
+            subtitle: c.subtitle || prev.cards[i]?.subtitle || "",
+          })) : prev.cards,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section
       className="py-20 bg-white px-6 border-t border-yellow-200"
       data-testid="bonuses"
     >
-      <h2 className="text-3xl md:text-5xl font-bold text-center mb-12 text-yellow-700">
-        Additional Support You'll Receive
+      <h2 className="text-3xl md:text-5xl font-bold text-center mb-12" style={{ color: data.headingColor }}>
+        {data.heading}
       </h2>
 
       <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
-        {(
-          [
-            {
-              id: 1,
-              img: "/bonus1.png",
-              title: "Employee Retention PowerKit",
-              subtitle: "A proven toolkit to keep your best employees loyal, motivated & long-term.",
-            },
-            {
-              id: 2,
-              img: "/bonus2.png",
-              title: "Branch / Franchise Expansion PowerKit",
-              subtitle: "Your strategic blueprint to scale confidently into new locations.",
-            },
-            {
-              id: 3,
-              img: "/bonus3.png",
-              title: "Business Automation PowerKit",
-              subtitle: " Systematize your operations and reduce manual workload effortlessly.",
-            },
-            {
-              id: 4,
-              img: "/bonus4.png",
-              title: "Fund Raising PowerKit",
-              subtitle: "A step-by-step playbook to prepare, pitch & secure business funding.",
-            },
-            {
-              id: 5,
-              img: "/bonus5.png",
-              title: "Export–Import Launch PowerKit",
-              subtitle: "A practical guide to start, manage & grow your export–import journey.",
-            },
-            {
-              id: 6,
-              img: "/bonus6.png",
-              title: "Growth Diagnosis PowerKit",
-              subtitle: "Identify bottlenecks, fix hidden gaps & unlock fast business growth.",
-            },
-          ]
-        ).map((item) => (
+        {data.cards.map((item) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 20 }}
@@ -1288,17 +1296,28 @@ function Bonuses() {
             whileHover={{ scale: 1.03 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.2 }}
-            className="bg-white p-6 md:p-8 rounded-2xl border border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300"
+            className="p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+            style={{ background: data.cardBg, border: `1px solid ${data.cardBorder}` }}
           >
             <div className="flex justify-center">
-              <img
-                src={item.img}
-                alt={item.title}
-                loading="lazy"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                className="w-full max-w-[320px] md:max-w-[420px] lg:max-w-[480px] h-auto object-contain mb-2"
-                style={{ maxHeight: '300px' }}
-              />
+              {item.imageDataUrl ? (
+                <img
+                  src={item.imageDataUrl}
+                  alt={item.title}
+                  loading="lazy"
+                  className="w-full max-w-[320px] md:max-w-[420px] lg:max-w-[480px] h-auto object-contain mb-2"
+                  style={{ maxHeight: '300px' }}
+                />
+              ) : (
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  loading="lazy"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  className="w-full max-w-[320px] md:max-w-[420px] lg:max-w-[480px] h-auto object-contain mb-2"
+                  style={{ maxHeight: '300px' }}
+                />
+              )}
             </div>
 
             <h3 className="text-sm md:text-2xl font-semibold mb-1 text-yellow-700">{item.title}</h3>
