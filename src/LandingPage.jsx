@@ -65,37 +65,57 @@ const safeStorage = {
 };
 
 function useOfferTimer() {
-  const DURATION = 15 * 60 * 1000; // 15 minutes in ms
-  const [timeLeft, setTimeLeft] = useState(DURATION);
+  const [timerDuration, setTimerDuration] = useState(15 * 60 * 1000); // default 15 minutes
+  const [timeLeft, setTimeLeft] = useState(timerDuration);
+
+  // Fetch timer duration from admin
+  useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/cta_timer`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        const minutes = typeof extra.timerMinutes === "number" ? extra.timerMinutes : 15;
+        const seconds = typeof extra.timerSeconds === "number" ? extra.timerSeconds : 0;
+        const duration = (minutes * 60 + seconds) * 1000;
+        setTimerDuration(duration);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // initialize stored end time if missing
     const now = Date.now();
     const stored = safeStorage.get("offerTimerEnd");
-    if (!stored) safeStorage.set("offerTimerEnd", String(now + DURATION));
+    if (!stored) safeStorage.set("offerTimerEnd", String(now + timerDuration));
 
     const id = setInterval(() => {
       try {
         const storedNow = safeStorage.get("offerTimerEnd");
-        const endTime = storedNow ? parseInt(storedNow, 10) : Date.now() + DURATION;
+        const endTime = storedNow ? parseInt(storedNow, 10) : Date.now() + timerDuration;
         const diff = endTime - Date.now();
 
         if (diff <= 0) {
           // timer ended — restart it by setting a new end time
-          const newEnd = Date.now() + DURATION;
+          const newEnd = Date.now() + timerDuration;
           safeStorage.set("offerTimerEnd", String(newEnd));
-          setTimeLeft(DURATION);
+          setTimeLeft(timerDuration);
         } else {
           setTimeLeft(diff);
         }
       } catch (e) {
-        // fallback: just set remaining to DURATION
-        setTimeLeft(DURATION);
+        // fallback: just set remaining to timerDuration
+        setTimeLeft(timerDuration);
       }
     }, 1000);
 
     return () => clearInterval(id);
-  }, []);
+  }, [timerDuration]);
 
   const format = useCallback((ms) => {
     const total = Math.max(0, Math.floor(ms / 1000));
