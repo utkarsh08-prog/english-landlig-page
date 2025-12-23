@@ -1566,43 +1566,90 @@ function OfferShowcase({ miniMinutes, miniSeconds }) {
  * COACH STATS
  *********************************/
 function CoachStats() {
-  const stats = [
-    ["16", "Years of Experience"],
-    ["1M", "Entrepreneurs Reached"],
-    ["500+", "Seminars Conducted"],
-    ["600K", "Followers"],
-    ["2,400", "Paid Customers"],
-    ["2400+", "Entrepreneur Community"],
-    ["2,400", "Guidance Clients"],
-    ["210+", "Industries Worked With"],
-  ];
+  const [coach, setCoach] = React.useState({
+    topHeading: "Meet Your Coach",
+    subtitleUnderlineColor: "#F59E0B",
+    coachImageUrl: "",
+    coachName: "Arunn Guptaa",
+    coachTitle: "India's Leading Business Success Coach",
+    stats: [
+      { number: "16", text: "Years of Experience" },
+      { number: "1M", text: "Entrepreneurs Reached" },
+      { number: "500+", text: "Seminars Conducted" },
+      { number: "600K", text: "Followers" },
+      { number: "2,400", text: "Paid Customers" },
+      { number: "2400+", text: "Entrepreneur Community" },
+      { number: "2,400", text: "Guidance Clients" },
+      { number: "210+", text: "Industries Worked With" },
+    ],
+    statCardBg: "#ffffff",
+    statCardBorder: "#F3E0B0",
+    numberColor: "#D97706",
+    headingColor: "#111827",
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/coach_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        setCoach((prev) => ({
+          ...prev,
+          topHeading: extra.topHeading || prev.topHeading,
+          subtitleUnderlineColor: extra.subtitleUnderlineColor || prev.subtitleUnderlineColor,
+          coachImageUrl: section.imageUrl || extra.coachImageDataUrl || prev.coachImageUrl,
+          coachName: extra.coachName || prev.coachName,
+          coachTitle: extra.coachTitle || prev.coachTitle,
+          stats: Array.isArray(extra.stats) && extra.stats.length ? extra.stats : prev.stats,
+          statCardBg: extra.statCardBg || prev.statCardBg,
+          statCardBorder: extra.statCardBorder || prev.statCardBorder,
+          numberColor: extra.numberColor || prev.numberColor,
+          headingColor: extra.headingColor || prev.headingColor,
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section
       className="py-20 bg-white text-black px-6 text-center border-t border-yellow-200"
       data-testid="coach-stats"
     >
-      <h2 className="text-3xl md:text-4xl font-bold mb-2">Meet Your Coach</h2>
-      <div className="w-16 h-1 bg-orange-400 mx-auto mb-10" />
+      <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: coach.headingColor }}>
+        {coach.topHeading}
+      </h2>
+      <div className="w-16 h-1 mx-auto mb-10" style={{ background: coach.subtitleUnderlineColor }} />
 
       <div className="flex flex-col items-center mb-10">
         <img
-          src="./photo2.png"
+          src={coach.coachImageUrl || "./photo2.png"}
           className="w-40 h-40 rounded-full border-4 border-white shadow-xl object-cover"
         />
-        <h3 className="text-2xl font-bold mt-4">Arunn Guptaa</h3>
-        <p className="text-zinc-600 text-base mt-1">
-          India's Leading Business Success Coach
-        </p>
+        <h3 className="text-2xl font-bold mt-4" style={{ color: coach.headingColor }}>{coach.coachName}</h3>
+        <p className="text-zinc-600 text-base mt-1">{coach.coachTitle}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-        {stats.map(([num, label], i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl shadow-lg border border-zinc-200">
-            <p className="text-3xl font-bold text-orange-600">{num}</p>
-            <p className="text-sm mt-1 text-zinc-600">{label}</p>
-          </div>
-        ))}
+        {(coach.stats || []).map((item, i) => {
+          const num = Array.isArray(item) ? item[0] : item.number;
+          const label = Array.isArray(item) ? item[1] : item.text;
+          return (
+            <div
+              key={i}
+              className="p-6 rounded-2xl shadow-lg border"
+              style={{ background: coach.statCardBg, borderColor: coach.statCardBorder }}
+            >
+              <p className="text-3xl font-bold" style={{ color: coach.numberColor }}>{num}</p>
+              <p className="text-sm mt-1 text-zinc-600">{label}</p>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
