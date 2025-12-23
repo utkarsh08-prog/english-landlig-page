@@ -1214,13 +1214,46 @@ function FeaturesGrid() {
  * REVIEW MARQUEE
  *********************************/
 function ReviewMarquee() {
+  const [content, setContent] = React.useState({
+    heading: "Real Strategies. Real Clarity. Real Business Growth.",
+    subheading: "Entrepreneurs gain clarity within the first 15 minutes — guaranteed.",
+    headingColor: "#B67B09",
+    textColor: "#374151",
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    // Bind to PowerKits topHeading/topSubheading so admin edits reflect here
+    fetch(`${ADMIN_API_URL}/api/sections/power_kits`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        const extra = section?.extraData || {};
+        setContent((prev) => ({
+          ...prev,
+          heading: extra.topHeading || prev.heading,
+          subheading: extra.topSubheading || prev.subheading,
+          headingColor: extra.headingColor || prev.headingColor,
+          textColor: prev.textColor,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section className="py-12 bg-transparent text-black px-6 border-t border-yellow-200">
-      <h2 className="text-3xl font-bold text-center mb-6 text-yellow-700">Real Strategies. Real Clarity. Real Business Growth.</h2>
+      <h2 className="text-3xl font-bold text-center mb-6" style={{ color: content.headingColor }}>{content.heading}</h2>
 
       <div className="max-w-4xl mx-auto overflow-hidden">
-        <div className="flex gap-10 whitespace-normal text-lg text-zinc-700">
-          <div className="w-full text-center">“Entrepreneurs gain clarity within the first 15 minutes — guaranteed.”</div>
+        <div className="flex gap-10 whitespace-normal text-lg" style={{ color: content.textColor }}>
+          <div className="w-full text-center">“{content.subheading}”</div>
         </div>
       </div>
     </section>
