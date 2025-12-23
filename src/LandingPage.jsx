@@ -1959,26 +1959,49 @@ function VideoTestimonials() {
  * FAQ
  *********************************/
 function FAQ() {
-  const list = [
-    { q: "Is this a 1-on-1 session?", a: "Yes. This is a personalized Guidance session where only you & the coach are present." },
-    { q: "What happens in the session?", a: "You get personalized clarity, custom strategies, and a Roadmap." },
-    { q: "Do I need to prepare?", a: "Yes. After registration, you'll receive a short form for details." },
-    { q: "Can I reschedule?", a: "Yes, once if informed 24 hours in advance." },
-    { q: "Will you help with exact problems?", a: "Absolutely. Everything is business-specific." },
-    { q: "Refund policy?", a: "If not satisfied, request a refund within 1 Hour of session — no questions asked." },
-    { q: "Is ₹99 the final price?", a: "Yes, limited-time offer for new clients only. However you can pay Rs 900 if you are 100% satisfied with the consultancy, just after the session." },
-    { q: "Will I get notes?", a: "Yes, you'll receive a written action roadmap after session." },
-  ];
+  const [data, setData] = React.useState({
+    heading: "Frequently Asked Questions",
+    items: [
+      { id: "q1", question: "Is this a 1-on-1 session?", answer: "Yes. This is a personalized Guidance session where only you & the coach are present." },
+      { id: "q2", question: "What happens in the session?", answer: "You get personalized clarity, custom strategies, and a Roadmap." },
+      { id: "q3", question: "Do I need to prepare?", answer: "Yes. After registration, you'll receive a short form for details." },
+      { id: "q4", question: "Can I reschedule?", answer: "Yes, once if informed 24 hours in advance." },
+      { id: "q5", question: "Will you help with exact problems?", answer: "Absolutely. Everything is business-specific." },
+      { id: "q6", question: "Refund policy?", answer: "If not satisfied, request a refund within 1 Hour of session — no questions asked." },
+      { id: "q7", question: "Is ₹99 the final price?", answer: "Yes, limited-time offer for new clients only. However you can pay Rs 900 if you are 100% satisfied with the consultancy, just after the session." },
+      { id: "q8", question: "Will I get notes?", answer: "Yes, you'll receive a written action roadmap after session." },
+    ]
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/faq_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          items: Array.isArray(extra.items) && extra.items.length ? extra.items : prev.items
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section className="py-20 bg-white px-6 text-black border-t border-yellow-200">
-      <h2 className="text-3xl md:text-5xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+      <h2 className="text-3xl md:text-5xl font-bold text-center mb-12">{data.heading}</h2>
 
       <div className="max-w-3xl mx-auto space-y-6">
-        {list.map((item, i) => (
-          <details key={i} className="bg-white border border-yellow-200 p-6 rounded-xl shadow-md">
-            <summary className="text-xl font-semibold cursor-pointer">{item.q}</summary>
-            <p className="text-zinc-600 mt-3">{item.a}</p>
+        {data.items.map((item, i) => (
+          <details key={item.id || i} className="bg-white border border-yellow-200 p-6 rounded-xl shadow-md">
+            <summary className="text-xl font-semibold cursor-pointer">{item.question}</summary>
+            <p className="text-zinc-600 mt-3">{item.answer}</p>
           </details>
         ))}
       </div>
