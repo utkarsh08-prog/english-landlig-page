@@ -767,7 +767,7 @@ function SessionExplainer({ miniMinutes, miniSeconds }) {
 
         <h2 className="text-4xl font-bold">{ctaData.principalName}</h2>
         <p className="text-lg text-zinc-600 mt-2">{ctaData.principalTitle}</p>
-        <p className="mt-4 text-zinc-600">{ctaData.principalDescription}</p>
+        <p className="mt-4 text-zinc-600" dangerouslySetInnerHTML={{ __html: ctaData.principalDescription.replace(/\n/g, '<br />') }} />
 
         {/* Rating Block + Button */}
         <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-fit mb-8 mx-auto">
@@ -1670,7 +1670,7 @@ function CoachStats() {
           className="w-40 h-40 rounded-full border-4 border-white shadow-xl object-cover"
         />
         <h3 className="text-2xl font-bold mt-4" style={{ color: coach.headingColor }}>{coach.coachName}</h3>
-        <p className="text-zinc-600 text-base mt-1">{coach.coachTitle}</p>
+        <p className="text-zinc-600 text-base mt-1" dangerouslySetInnerHTML={{ __html: coach.coachTitle.replace(/\n/g, '<br />') }} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
