@@ -233,21 +233,57 @@ function ExitPopup() {
 function LiveTodayBanner() {
   useLiveViewers("liveViewers");
 
+  const [bannerData, setBannerData] = useState({
+    liveText: "LIVE TODAY",
+    mainHeading: "1-on-1 Private Business Guidance Session",
+    subText: "(Only a few slots left)",
+    viewersCount: 57
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/sections/header", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (response.ok) {
+          const res = await response.json();
+          const extra = res?.extraData || {};
+          if (mounted) {
+            setBannerData({
+              liveText: extra.liveText || bannerData.liveText,
+              mainHeading: extra.mainHeading || bannerData.mainHeading,
+              subText: extra.subText || bannerData.subText,
+              viewersCount: 57
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Live Today banner fetch error:", err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <section className="w-full px-6 mt-6 mb-10 flex flex-col items-center text-center">
       <div className="bg-yellow-100 text-yellow-800 px-6 py-4 rounded-2xl shadow-lg max-w-2xl w-full text-sm md:text-base font-semibold tracking-wide border border-yellow-300/40">
         <>
           <span className="flex justify-center items-center gap-2 mb-1">
             <span className="h-3 w-3 bg-red-500 rounded-full animate-ping" />
-            <span className="text-red-600 font-bold">LIVE TODAY</span>
+            <span className="text-red-600 font-bold">{bannerData.liveText}</span>
           </span>
 
-          <span className="font-bold">1-on-1 Private Business Guidance Session</span>
+          <span className="font-bold">{bannerData.mainHeading}</span>
           <br />
-          <span className="opacity-90 text-sm">(Only a few slots left)</span>
+          <span className="opacity-90 text-sm">{bannerData.subText}</span>
 
           <div className="mt-1 text-xs text-red-600 font-semibold">
-            👁️ <span id="liveViewers">57</span> people viewing right now
+            👁️ <span id="liveViewers">{bannerData.viewersCount}</span> people viewing right now
           </div>
         </>
       </div>
@@ -259,7 +295,7 @@ export { PrimaryButton };
 /*********************************
  * Stats Strip
  *********************************/
-function StatsStrip() {
+function StatsStrip({ stats = [] }) {
   // animate values when the strip is in view (runs each time it enters viewport)
   const containerRef = useRef(null);
   const [inViewCount, setInViewCount] = useState(0);
@@ -282,31 +318,37 @@ function StatsStrip() {
     return () => obs.disconnect();
   }, []);
 
-  // Animate to requested targets so the numbers remain animated
-  const valA = useCountUp(2400, { duration: 1400, decimals: 0, start: inViewCount > 0, restartKey: inViewCount });
-  const valB = useCountUp(4.96, { duration: 1400, decimals: 2, start: inViewCount > 0, restartKey: inViewCount });
-  const valC = useCountUp(100, { duration: 1400, decimals: 0, start: inViewCount > 0, restartKey: inViewCount });
-  const valD = useCountUp(100, { duration: 1400, decimals: 0, start: inViewCount > 0, restartKey: inViewCount });
+  // Default stats if not provided
+  const defaultStats = [
+    { value: 2400, label: "Founders Trained", suffix: "+", decimals: 0 },
+    { value: 4.96, label: "Avg Rating", suffix: "★", decimals: 2 },
+    { value: 100, label: "Case Studies", suffix: "s", decimals: 0 },
+    { value: 100, label: "Results", prefix: "₹", suffix: "Cr+", decimals: 0 }
+  ];
 
-  const displayA = `${Math.round(valA).toLocaleString()}+`;
-  const displayB = `${Number(valB).toFixed(2)}★`;
-  const displayC = `${Math.round(valC)}s`;
-  const displayD = `₹${Math.round(valD)}Cr+`;
+  const displayStats = stats.length === 4 ? stats : defaultStats;
 
   return (
     <div ref={containerRef} className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 text-zinc-600 text-sm">
-      <div className="p-6 rounded-2xl bg-white shadow-lg border border-yellow-200 text-black font-semibold">
-        {displayA} Founders Trained
-      </div>
-      <div className="p-6 rounded-2xl bg-white shadow-lg border border-yellow-200 text-black font-semibold">
-        {displayB} Avg Rating
-      </div>
-      <div className="p-6 rounded-2xl bg-white shadow-lg border border-yellow-200 text-black font-semibold">
-        {displayC} Case Studies
-      </div>
-      <div className="p-6 rounded-2xl bg-white shadow-lg border border-yellow-200 text-black font-semibold">
-        {displayD} Results
-      </div>
+      {displayStats.map((stat, idx) => {
+        const val = useCountUp(stat.value || 0, { 
+          duration: 1400, 
+          decimals: stat.decimals || 0, 
+          start: inViewCount > 0, 
+          restartKey: inViewCount 
+        });
+        
+        let display = '';
+        if (stat.prefix) display += stat.prefix;
+        display += stat.decimals > 0 ? Number(val).toFixed(stat.decimals) : Math.round(val).toLocaleString();
+        if (stat.suffix) display += stat.suffix;
+
+        return (
+          <div key={idx} className="p-6 rounded-2xl bg-white shadow-lg border border-yellow-200 text-black font-semibold">
+            {display} {stat.label}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -328,7 +370,64 @@ const JoinPopup = ({ name, isMobile }) => (
   </div>
 );
 
-function Hero({ parallaxY, heading, subline, ctaLabel }) {
+function Hero({ parallaxY }) {
+  const [heroData, setHeroData] = useState({
+    heading: "Transform Your Business With Personal 1-on-1 Guidance",
+    subline: "Get clarity, strategy & direction tailored exactly for YOUR business.",
+    ctaLabel: "Book Your Session",
+    stats: []
+  });
+
+  useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/hero`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        if (!section) return;
+        
+        const newData = {};
+        
+        // Get heading
+        if (section.extraData?.heroHeading) {
+          newData.heading = section.extraData.heroHeading;
+        } else if (section.title) {
+          newData.heading = section.title;
+        }
+        
+        // Get subline
+        if (section.extraData?.heroSubheading) {
+          newData.subline = section.extraData.heroSubheading;
+        } else if (section.subtitle) {
+          newData.subline = section.subtitle;
+        }
+        
+        // Get CTA label
+        if (section.extraData?.buttonText) {
+          newData.ctaLabel = section.extraData.buttonText;
+        } else if (section.content) {
+          newData.ctaLabel = section.content;
+        }
+        
+        // Get stats array
+        if (section.extraData?.stats && Array.isArray(section.extraData.stats)) {
+          newData.stats = section.extraData.stats;
+        }
+        
+        setHeroData(prev => ({ ...prev, ...newData }));
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch hero section:", err.message || err);
+      });
+  }, []);
+
   return (
     <section
       className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 bg-white relative overflow-hidden"
@@ -353,7 +452,7 @@ function Hero({ parallaxY, heading, subline, ctaLabel }) {
         transition={{ duration: 0.6 }}
         className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-yellow-700 max-w-4xl leading-tight"
       >
-        {heading}
+        {heroData.heading}
       </motion.h1>
 
       {/* Subline */}
@@ -363,14 +462,14 @@ function Hero({ parallaxY, heading, subline, ctaLabel }) {
         transition={{ delay: 0.3, duration: 0.6 }}
         className="text-lg md:text-2xl text-zinc-700 mt-4 max-w-2xl"
       >
-        {subline}
+        {heroData.subline}
       </motion.p>
 
       {/* Stats */}
-      <StatsStrip />
+      <StatsStrip stats={heroData.stats} />
 
       {/* CTA Button */}
-      <PrimaryButton className="mt-12" label={ctaLabel} />
+      <PrimaryButton className="mt-12" label={heroData.ctaLabel} />
     </section>
   );
 }
@@ -452,11 +551,49 @@ function useCountUp(end, { duration = 1400, decimals = 0, start = true, restartK
 
 const SuccessMarquee = () => {
   const joined = useJoinCounter();
+  const [marqueeData, setMarqueeData] = useState({
+    text: `🚀 ${joined} Entrepreneurs Joined • 98% Satisfaction • Last Registration 3 Minutes Ago`,
+    textColor: "#9A3412",
+    bg: "#FFFFFF"
+  });
+
+  useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/social_proof_bar`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        if (!section || !section.extraData) return;
+        const { marqueeText, marqueeTextColor, marqueeBg } = section.extraData;
+        
+        setMarqueeData({
+          text: marqueeText?.replace(/\{joined\}/g, joined) || `🚀 ${joined} Entrepreneurs Joined • 98% Satisfaction • Last Registration 3 Minutes Ago`,
+          textColor: marqueeTextColor || "#9A3412",
+          bg: marqueeBg || "#FFFFFF"
+        });
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch social proof marquee:", err.message || err);
+      });
+  }, [joined]);
 
   return (
-    <div className="w-full bg-transparent py-6 mt-6 text-yellow-800 font-semibold text-sm md:text-base border-t border-yellow-300 overflow-hidden text-center">
+    <div 
+      className="w-full py-6 mt-6 font-semibold text-sm md:text-base border-t border-yellow-300 overflow-hidden text-center"
+      style={{ 
+        backgroundColor: marqueeData.bg,
+        color: marqueeData.textColor
+      }}
+    >
       <span className="inline-block animate-marquee2">
-        🚀 {joined} Entrepreneurs Joined • 98% Satisfaction • Last Registration 3 Minutes Ago
+        {marqueeData.text}
       </span>
     </div>
   );
@@ -465,50 +602,152 @@ const SuccessMarquee = () => {
 /*********************************
  * SESSION EXPLAINER
  *********************************/
-function SessionExplainer({ miniMinutes, miniSeconds, sessionHeading }) {
+function SessionExplainer({ miniMinutes, miniSeconds }) {
+  const [sessionData, setSessionData] = useState({
+    heading: "What Happens In Your 1-on-1 Session?",
+    bullets: [
+      "You Get Personal Attention on your exact business challenges",
+      "You Receive a Custom Growth Plan designed only for your business",
+      "You Discover specific action steps for revenue, team & systems",
+      "You Walk Away With a clear Action roadmap",
+      "1 Hour That Can Change the Way You Run Your Business"
+    ],
+    imageUrl: "./coach.png",
+    imageAlt: "Coach"
+  });
+
+  const [ctaData, setCtaData] = useState({
+    introText: "This is a Private 1-on-1 Guidance Session",
+    principalName: "Arunn Guptaa",
+    principalTitle: "India's Emerging Business Growth Coach",
+    principalDescription: "Guided and Mentored Business Owners to Build Profitable & Scalable Enterprises",
+    leftBoxLines: ["★★★★★", "2,400+ People Rated", "My Programs with 4.96 Star"],
+    leftBoxBg: "#0f1724",
+    leftBoxTextColor: "#fff",
+    ctaText: "Register Now At ₹99/- Only"
+  });
+
+  useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/session`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        if (!section || !section.extraData) return;
+        const { heading, bullets, imageUrl, imageAlt } = section.extraData;
+        
+        setSessionData({
+          heading: heading || "What Happens In Your 1-on-1 Session?",
+          bullets: Array.isArray(bullets) ? bullets : [
+            "You Get Personal Attention on your exact business challenges",
+            "You Receive a Custom Growth Plan designed only for your business",
+            "You Discover specific action steps for revenue, team & systems",
+            "You Walk Away With a clear Action roadmap",
+            "1 Hour That Can Change the Way You Run Your Business"
+          ],
+          imageUrl: imageUrl || "./coach.png",
+          imageAlt: imageAlt || "Coach"
+        });
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch session section:", err.message || err);
+      });
+  }, []);
+
+  useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/cta_timer`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        if (!section || !section.extraData) return;
+        const { 
+          introText, 
+          principalName, 
+          principalTitle, 
+          principalDescription,
+          leftBoxLines,
+          leftBoxBg,
+          leftBoxTextColor,
+          ctaText
+        } = section.extraData;
+        
+        setCtaData({
+          introText: introText || "This is a Private 1-on-1 Guidance Session",
+          principalName: principalName || "Arunn Guptaa",
+          principalTitle: principalTitle || "India's Emerging Business Growth Coach",
+          principalDescription: principalDescription || "Guided and Mentored Business Owners to Build Profitable & Scalable Enterprises",
+          leftBoxLines: Array.isArray(leftBoxLines) ? leftBoxLines : ["★★★★★", "2,400+ People Rated", "My Programs with 4.96 Star"],
+          leftBoxBg: leftBoxBg || "#0f1724",
+          leftBoxTextColor: leftBoxTextColor || "#fff",
+          ctaText: ctaText || "Register Now At ₹99/- Only"
+        });
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch cta_timer section:", err.message || err);
+      });
+  }, []);
+
   return (
     <section className="py-20 px-6 bg-white text-black" data-testid="coach-intro">
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
         
         {/* Bullet Points */}
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-yellow-200">
-          <h2 className="text-2xl font-bold mb-4">{sessionHeading}</h2>
+          <h2 className="text-2xl font-bold mb-4">{sessionData.heading}</h2>
 
           <ul className="space-y-3 text-zinc-600 text-lg">
-            <li>● You Get <span className="font-semibold text-yellow-800">Personal Attention</span> on your exact business challenges</li>
-            <li>● You Receive a <span className="font-semibold text-yellow-800">Custom Growth Plan</span> designed only for your business</li>
-            <li>● You Discover <span className="font-semibold text-yellow-800">specific action steps</span> for revenue, team & systems</li>
-            <li>● You Walk Away With a <span className="font-semibold text-yellow-800">clear Action roadmap</span></li>
-            <li>● <span className="font-semibold text-yellow-800">1 Hour</span> That Can Change the Way You Run Your Business</li>
+            {sessionData.bullets.map((bullet, idx) => (
+              <li key={idx}>● {bullet}</li>
+            ))}
           </ul>
         </div>
 
         {/* Coach Image */}
         <div className="flex justify-center bg-white p-4 rounded-2xl shadow-lg">
-          <img src="./coach.png" alt="Coach" className="rounded-2xl w-full max-w-sm shadow-2xl" />
+          <img src={sessionData.imageUrl} alt={sessionData.imageAlt} className="rounded-2xl w-full max-w-sm shadow-2xl" />
         </div>
       </div>
 
       {/* Coach Info */}
       <div className="max-w-3xl mx-auto mt-12 text-center">
-        <p className="text-zinc-600 mb-2">This is a Private 1-on-1 Guidance Session</p>
+        <p className="text-zinc-600 mb-2">{ctaData.introText}</p>
 
-        <h2 className="text-4xl font-bold">Arunn Guptaa</h2>
-        <p className="text-lg text-zinc-600 mt-2">India's Emerging Business Growth Coach</p>
-        <p className="mt-4 text-zinc-600">Guided and Mentored Business Owners to Build Profitable & Scalable Enterprises</p>
+        <h2 className="text-4xl font-bold">{ctaData.principalName}</h2>
+        <p className="text-lg text-zinc-600 mt-2">{ctaData.principalTitle}</p>
+        <p className="mt-4 text-zinc-600">{ctaData.principalDescription}</p>
 
         {/* Rating Block + Button */}
         <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-fit mb-8 mx-auto">
-          <div className="flex items-center gap-4 bg-zinc-900 px-5 py-4 rounded-xl border border-zinc-800 shadow-lg w-full sm:w-auto">
-            <span className="text-yellow-400 text-2xl sm:text-xl">★★★★★</span>
-            <p className="text-zinc-300 text-base sm:text-sm text-center sm:text-left">
-              2,400+ People Rated
+          <div className="flex items-center gap-4 px-5 py-4 rounded-xl border shadow-lg w-full sm:w-auto" 
+               style={{ 
+                 backgroundColor: ctaData.leftBoxBg,
+                 color: ctaData.leftBoxTextColor,
+                 borderColor: ctaData.leftBoxBg
+               }}>
+            <span className="text-yellow-400 text-2xl sm:text-xl">{ctaData.leftBoxLines[0]}</span>
+            <p className="text-base sm:text-sm text-center sm:text-left">
+              {ctaData.leftBoxLines[1]}
               <br className="block sm:hidden" />
-              <span className="block">My Programs with 4.96 Star</span>
+              <span className="block">{ctaData.leftBoxLines[2]}</span>
             </p>
           </div>
 
-          <PrimaryButton className="sm:ml-2 w-full sm:w-auto mt-2 sm:mt-0" />
+          <PrimaryButton className="sm:ml-2 w-full sm:w-auto mt-2 sm:mt-0" label={ctaData.ctaText} />
         </div>
 
         {/* Timer */}
@@ -537,8 +776,7 @@ export { StatsStrip };
  * FEATURED LOGOS – PREMIUM CAROUSEL
 *********************************/
 function FeaturedLogos() {
-  // Apni 8 images yahan add karo (file names tum apne hisaab se rakh sakte ho)
-  const images = [
+  const [images, setImages] = React.useState([
     "/featured1.jpg",
     "/featured2.jpg",
     "/featured3.jpg",
@@ -547,13 +785,34 @@ function FeaturedLogos() {
     "/featured6.jpg",
     "/featured7.jpg",
     "/featured8.jpg",
-  ];
+  ]);
 
   const [current, setCurrent] = React.useState(0);
 
-  const next = () => setCurrent((prev) => (prev + 1) % images.length);
-  const prev = () =>
-    setCurrent((prev) => (prev - 1 + images.length) % images.length);
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/featured_logos`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        if (!section || !section.extraData) return;
+        const { images: logoImages } = section.extraData;
+        
+        if (Array.isArray(logoImages) && logoImages.length > 0) {
+          setImages(logoImages.map(img => img.url || img));
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch featured logos:", err.message || err);
+      });
+  }, []);
 
   // Auto-slide
   React.useEffect(() => {
@@ -636,6 +895,58 @@ function FeaturedLogos() {
  * BUSINESS TRANSFORMATION GRAPH
  *********************************/
 function TransformGraph() {
+  const [data, setData] = React.useState({
+    heading: "How Your Business Will Transform With 1-on-1 Guidance",
+    centerTextLine1: "Business",
+    centerTextLine2: "Breakthrough",
+    boxTop: "Right Mindset",
+    boxLeft: "Improved\nSystems",
+    boxRight: "Better\nStrategies",
+    boxBottom: "High Team Performance",
+    centerBg: "#F59E0B",
+    centerTextColor: "#111827",
+    boxBg: "#FFF9EB",
+    boxBorder: "#E7C36B",
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const headers = { "Content-Type": "application/json" };
+
+    fetch(`${ADMIN_API_URL}/api/sections/transform_section`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        const extra = section?.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          centerTextLine1: extra.centerTextLine1 || prev.centerTextLine1,
+          centerTextLine2: extra.centerTextLine2 || prev.centerTextLine2,
+          boxTop: extra.boxTop || prev.boxTop,
+          boxLeft: extra.boxLeft || prev.boxLeft,
+          boxRight: extra.boxRight || prev.boxRight,
+          boxBottom: extra.boxBottom || prev.boxBottom,
+          centerBg: extra.centerBg || prev.centerBg,
+          centerTextColor: extra.centerTextColor || prev.centerTextColor,
+          boxBg: extra.boxBg || prev.boxBg,
+          boxBorder: extra.boxBorder || prev.boxBorder,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const renderLines = (text) => {
+    return text.split("\n").map((line, idx) => (
+      <React.Fragment key={idx}>
+        {line}
+        {idx < text.split("\n").length - 1 ? <br /> : null}
+      </React.Fragment>
+    ));
+  };
+
   return (
     <section
       className="py-24 bg-white text-black text-center relative overflow-hidden border-t border-yellow-200"
@@ -649,7 +960,7 @@ function TransformGraph() {
       />
 
       <h2 className="text-3xl md:text-4xl font-extrabold mb-14 relative z-10 text-yellow-700 drop-shadow">
-        How Your Business Will Transform With 1-on-1 Guidance
+        {data.heading}
       </h2>
 
       <div className="relative flex justify-center items-center w-full max-w-3xl mx-auto h-[380px] md:h-[420px] z-10">
@@ -659,10 +970,16 @@ function TransformGraph() {
           initial={{ scale: 0, opacity: 0 }}
           whileInView={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="absolute w-44 h-44 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full 
-          flex items-center justify-center shadow-2xl border-4 border-yellow-600 text-black font-bold text-lg"
+          className="absolute w-44 h-44 rounded-full flex items-center justify-center shadow-2xl border-4 text-black font-bold text-lg"
+          style={{
+            background: data.centerBg,
+            color: data.centerTextColor,
+            borderColor: data.boxBorder,
+          }}
         >
-          Business<br />Breakthrough
+          {data.centerTextLine1}
+          <br />
+          {data.centerTextLine2}
         </motion.div>
 
         {/* Top */}
@@ -670,9 +987,10 @@ function TransformGraph() {
           initial={{ y: -40, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="absolute -top-4 bg-white p-4 rounded-xl shadow-lg border border-yellow-300 font-semibold text-yellow-700"
+          className="absolute -top-4 p-4 rounded-xl shadow-lg font-semibold text-yellow-700"
+          style={{ background: data.boxBg, border: `1px solid ${data.boxBorder}` }}
         >
-          Right Mindset
+          {data.boxTop}
         </motion.div>
 
         {/* Left */}
@@ -680,9 +998,10 @@ function TransformGraph() {
           initial={{ x: -40, opacity: 0 }}
           whileInView={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="absolute left-0 md:-left-10 bg-white p-4 rounded-xl shadow-lg border border-yellow-300 font-semibold text-yellow-700"
+          className="absolute left-0 md:-left-10 p-4 rounded-xl shadow-lg font-semibold text-yellow-700"
+          style={{ background: data.boxBg, border: `1px solid ${data.boxBorder}` }}
         >
-          <>Improved<br/>Systems</>
+          {renderLines(data.boxLeft)}
         </motion.div>
 
         {/* Right */}
@@ -690,9 +1009,10 @@ function TransformGraph() {
           initial={{ x: 40, opacity: 0 }}
           whileInView={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="absolute right-0 md:-right-10 bg-white p-4 rounded-xl shadow-lg border border-yellow-300 font-semibold text-yellow-700"
+          className="absolute right-0 md:-right-10 p-4 rounded-xl shadow-lg font-semibold text-yellow-700"
+          style={{ background: data.boxBg, border: `1px solid ${data.boxBorder}` }}
         >
-          <>Better<br/>Strategies</>
+          {renderLines(data.boxRight)}
         </motion.div>
 
         {/* Bottom */}
@@ -700,13 +1020,13 @@ function TransformGraph() {
           initial={{ y: 40, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="absolute -bottom-4 bg-white p-4 rounded-xl shadow-lg border border-yellow-300 font-semibold text-yellow-700"
+          className="absolute -bottom-4 p-4 rounded-xl shadow-lg font-semibold text-yellow-700"
+          style={{ background: data.boxBg, border: `1px solid ${data.boxBorder}` }}
         >
-          High Team Performance
+          {data.boxBottom}
         </motion.div>
 
       </div>
-      {/* Register button removed from this section per request */}
     </section>
   );
 }
@@ -715,40 +1035,71 @@ function TransformGraph() {
  * WHAT YOU WILL LEARN (1 Hr)
  *********************************/
 function LearnSection() {
-  const list = [
-    "How To Build A Growth-Focused, High-Performance Business.",
-    "The Difference Between Growth Businesses & Survival Businesses.",
-    "Why Most Business Owners Get Stuck — And How To Break Through.",
-    "The Focus Areas Required To Build A Scalable Growth Machine.",
-  ];
+  const [data, setData] = React.useState({
+    heading: "What You Will Learn In 1 Hr",
+    items: [
+      "How To Build A Growth-Focused, High-Performance Business.",
+      "The Difference Between Growth Businesses & Survival Businesses.",
+      "Why Most Business Owners Get Stuck — And How To Break Through.",
+      "The Focus Areas Required To Build A Scalable Growth Machine.",
+    ],
+    accentColor: "#B67B09",
+    numberBg: "#FDE9A8",
+    boxBorder: "#F3E0B0",
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/what_you_will_learn`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        const extra = section?.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          items: Array.isArray(extra.items) && extra.items.length ? extra.items : prev.items,
+          accentColor: extra.accentColor || prev.accentColor,
+          numberBg: extra.numberBg || prev.numberBg,
+          boxBorder: extra.boxBorder || prev.boxBorder,
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section
       className="py-20 bg-white text-black px-6 border-t border-yellow-200"
       data-testid="learn-1hr"
     >
-      <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-yellow-700">
-        What You Will Learn In<br />1 Hr
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: data.accentColor }}>
+        {data.heading}
       </h2>
 
-      <div className="w-20 h-1 bg-yellow-400 mx-auto mb-12 rounded-full" />
+      <div className="w-20 h-1 mx-auto mb-12 rounded-full" style={{ backgroundColor: data.accentColor }} />
 
       <div className="space-y-6 max-w-3xl mx-auto">
-        {list.map((text, idx) => (
+        {data.items.map((text, idx) => (
           <div
             key={idx}
-            className="bg-white p-6 rounded-2xl shadow-lg border border-yellow-200 flex flex-col items-start"
+            className="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-start"
+            style={{ border: `1px solid ${data.boxBorder}` }}
           >
-            <div className="bg-yellow-100 text-yellow-700 font-bold px-4 py-2 rounded-lg mr-4 text-lg shadow-sm">
+            <div
+              className="font-bold px-4 py-2 rounded-lg mr-4 text-lg shadow-sm"
+              style={{ backgroundColor: data.numberBg, color: data.accentColor }}
+            >
               {String(idx + 1).padStart(2, "0")}.
             </div>
 
             <p className="text-lg font-medium text-zinc-700">{text}</p>
-
-            {idx === 3 && (
-              <p className="text-zinc-600 text-base mt-3 ml-16">
-              </p>
-            )}
           </div>
         ))}
       </div>
@@ -760,36 +1111,101 @@ function LearnSection() {
  * FEATURES GRID
  *********************************/
 function FeaturesGrid() {
-  const items = [
-    { title: "Clarity", desc: "Get crystal-clear direction on what to focus on to grow faster.", icon: <Lightbulb className="h-6 w-6 text-yellow-700" /> },
-    { title: "Systems", desc: "Build structured processes that make your business run smoothly.", icon: <Layers className="h-6 w-6 text-yellow-700" /> },
-    { title: "Growth", desc: "Unlock strategies that help you scale without chaos or confusion.", icon: <TrendingUp className="h-6 w-6 text-yellow-700" /> },
-    { title: "Leadership", desc: "Develop mindset & skills to lead your team with confidence.", icon: <Users className="h-6 w-6 text-yellow-700" /> },
-    { title: "Strategy", desc: "Learn proven business strategies that actually move the needle.", icon: <Target className="h-6 w-6 text-yellow-700" /> },
-    { title: "Execution", desc: "Implement action-driven plans that generate real business results.", icon: <CheckCircle className="h-6 w-6 text-yellow-700" /> },
+  const [data, setData] = React.useState({
+    heading: "",
+    headingColor: "#B67B09",
+    cardBg: "#FFFFFF",
+    cardBorder: "#E7C36B",
+    iconBg: "#FEF3C7",
+    cards: [
+      { title: "Clarity", desc: "Get crystal-clear direction on what to focus on to grow faster.", iconDataUrl: "" },
+      { title: "Systems", desc: "Build structured processes that make your business run smoothly.", iconDataUrl: "" },
+      { title: "Growth", desc: "Unlock strategies that help you scale without chaos or confusion.", iconDataUrl: "" },
+      { title: "Leadership", desc: "Develop mindset & skills to lead your team with confidence.", iconDataUrl: "" },
+      { title: "Strategy", desc: "Learn proven business strategies that actually move the needle.", iconDataUrl: "" },
+      { title: "Execution", desc: "Implement action-driven plans that generate real business results.", iconDataUrl: "" },
+    ],
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/feature_cards`, { headers })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        return r.json();
+      })
+      .then((section) => {
+        const extra = section?.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          headingColor: extra.headingColor || prev.headingColor,
+          cardBg: extra.cardBg || prev.cardBg,
+          cardBorder: extra.cardBorder || prev.cardBorder,
+          iconBg: extra.iconBg || prev.iconBg,
+          cards: Array.isArray(extra.cards) && extra.cards.length ? extra.cards : prev.cards,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const fallbackIcons = [
+    <Lightbulb className="h-6 w-6 text-yellow-700" />,
+    <Layers className="h-6 w-6 text-yellow-700" />,
+    <TrendingUp className="h-6 w-6 text-yellow-700" />,
+    <Users className="h-6 w-6 text-yellow-700" />,
+    <Target className="h-6 w-6 text-yellow-700" />,
+    <CheckCircle className="h-6 w-6 text-yellow-700" />,
   ];
 
   return (
     <section
-      className="py-20 px-6 md:px-10 grid md:grid-cols-3 gap-10 bg-white border-t border-yellow-200"
+      className="py-20 px-6 md:px-10 bg-white border-t border-yellow-200"
       data-testid="features"
     >
-      {items.map((item, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true, amount: 0.2 }}
-          className="bg-white p-8 rounded-2xl shadow-lg border border-yellow-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
-        >
-          <div className="mb-4 p-3 rounded-xl bg-yellow-100 border border-yellow-300 w-fit">{item.icon}</div>
+      {data.heading ? (
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: data.headingColor }}>{data.heading}</h2>
+        </div>
+      ) : null}
 
-          <h3 className="text-3xl font-semibold mb-4 text-yellow-700">{item.title}</h3>
+      <div className="grid md:grid-cols-3 gap-10">
+        {data.cards.map((item, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, amount: 0.2 }}
+            className="p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+            style={{ background: data.cardBg, border: `1px solid ${data.cardBorder}` }}
+          >
+            <div
+              className="mb-4 p-3 rounded-xl w-fit border"
+              style={{ background: data.iconBg, borderColor: data.cardBorder }}
+            >
+              {item.iconDataUrl ? (
+                <img src={item.iconDataUrl} alt="icon" className="h-6 w-6 object-contain" />
+              ) : (
+                fallbackIcons[i % fallbackIcons.length]
+              )}
+            </div>
 
-          <p className="text-zinc-600 text-lg">{item.desc}</p>
-        </motion.div>
-      ))}
+            <h3 className="text-3xl font-semibold mb-4 text-yellow-700">{item.title}</h3>
+
+            {typeof item.desc === "string" && item.desc.includes("<") ? (
+              <div className="text-zinc-600 text-lg" dangerouslySetInnerHTML={{ __html: item.desc }} />
+            ) : (
+              <p className="text-zinc-600 text-lg">{item.desc}</p>
+            )}
+          </motion.div>
+        ))}
+      </div>
     </section>
   );
 }
@@ -1458,66 +1874,6 @@ export default function LandingPage() {
   // Guarantee popup state (opens once when guarantee section enters view)
   const [showGuaranteePopup, setShowGuaranteePopup] = React.useState(false);
 
-  // Remote content binding (fetch sections from admin backend)
-  const [heroHeading, setHeroHeading] = React.useState(
-    "Transform Your Business With Personal 1-on-1 Guidance"
-  );
-  const [heroSubline, setHeroSubline] = React.useState(
-    "Get clarity, strategy & direction tailored exactly for YOUR business."
-  );
-  const [ctaLabel, setCtaLabel] = React.useState(undefined);
-  const [sessionHeading, setSessionHeading] = React.useState(
-    "What Happens In Your 1-on-1 Session?"
-  );
-
-  React.useEffect(() => {
-    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
-    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
-
-    const headers = { "Content-Type": "application/json" };
-    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
-
-    fetch(`${ADMIN_API_URL}/api/sections`, { headers })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Status ${r.status}`);
-        return r.json();
-      })
-      .then((sections) => {
-        if (!Array.isArray(sections)) return;
-        // Prefer main heading and subheading from the 'header' section if present (admin stores page heading there)
-        const header = sections.find((s) => s.key === "header");
-        if (header) {
-          if (header.extraData?.mainHeading) setHeroHeading(header.extraData.mainHeading);
-          // prefer explicit pageSubheading, then subText
-          if (header.extraData?.pageSubheading) setHeroSubline(header.extraData.pageSubheading);
-          else if (header.extraData?.subText) setHeroSubline(header.extraData.subText);
-        }
-
-        const hero = sections.find((s) => s.key === "hero");
-        if (hero) {
-          // hero.title may be used as fallback if header.mainHeading is not set
-          if (hero.title && !header?.extraData?.mainHeading) setHeroHeading(hero.title);
-          // only use hero.subtitle if header didn't supply a subline
-          if (hero.subtitle && !header?.extraData?.pageSubheading && !header?.extraData?.subText) setHeroSubline(hero.subtitle);
-          // CTA text may be in extraData or content
-          const cta = hero.extraData?.ctaText || hero.extraData?.buttonText || hero.content;
-          if (cta) setCtaLabel(cta);
-        }
-
-        // Session heading: allow override from header.extraData or a dedicated session/coach section
-        if (header?.extraData?.sessionHeading) {
-          setSessionHeading(header.extraData.sessionHeading);
-        } else {
-          const sessionSection = sections.find((s) => ["session", "coach", "coach-intro", "session_explainer", "coach_intro"].includes(s.key));
-          if (sessionSection && sessionSection.title) setSessionHeading(sessionSection.title);
-        }
-      })
-      .catch((err) => {
-        // non-fatal: keep defaults
-        console.warn("Failed to fetch admin sections:", err.message || err);
-      });
-  }, []);
-
   const handleWelcomeContinue = () => {
     setShowWelcome(false);
   };
@@ -1665,14 +2021,14 @@ export default function LandingPage() {
         </div>
 
         <LiveTodayBanner />
-        <Hero parallaxY={parallaxY} heading={heroHeading} subline={heroSubline} ctaLabel={ctaLabel} />
+        <Hero parallaxY={parallaxY} />
         <SuccessMarquee />
 
         {/* Sold out progress bar (dynamic) */}
         <SoldOutBar />
         
         <section id="timerSection">
-          <SessionExplainer miniMinutes={miniMinutes} miniSeconds={miniSeconds} sessionHeading={sessionHeading} />
+          <SessionExplainer miniMinutes={miniMinutes} miniSeconds={miniSeconds} />
         </section>
         <FeaturedCarousel />
         <TransformGraph />
