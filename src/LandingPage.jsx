@@ -1940,7 +1940,7 @@ function VideoTestimonials() {
     <section className="py-20 bg-black text-white px-6" data-testid="video-testimonials">
       <h2 className="text-3xl md:text-5xl font-bold text-center mb-10">{data.heading}</h2>
       {data.description && (
-        <p className="text-center text-zinc-400 mb-6 max-w-2xl mx-auto">{data.description}</p>
+        <p className="text-center text-zinc-400 mb-6 max-w-2xl mx-auto" dangerouslySetInnerHTML={{ __html: data.description.replace(/\n/g, '<br />') }} />
       )}
 
       <div className="relative max-w-5xl mx-auto overflow-hidden rounded-2xl border border-zinc-800 shadow-2xl">
@@ -2038,8 +2038,8 @@ function FAQ() {
       <div className="max-w-3xl mx-auto space-y-6">
         {data.items.map((item, i) => (
           <details key={item.id || i} className="bg-white border border-yellow-200 p-6 rounded-xl shadow-md">
-            <summary className="text-xl font-semibold cursor-pointer">{item.question}</summary>
-            <p className="text-zinc-600 mt-3">{item.answer}</p>
+            <summary className="text-xl font-semibold cursor-pointer" dangerouslySetInnerHTML={{ __html: item.question.replace(/\n/g, '<br />') }} />
+            <p className="text-zinc-600 mt-3" dangerouslySetInnerHTML={{ __html: item.answer.replace(/\n/g, '<br />') }} />
           </details>
         ))}
       </div>
