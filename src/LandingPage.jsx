@@ -1781,6 +1781,35 @@ function Guarantee() {
  * VIDEO TESTIMONIALS CAROUSEL
  *********************************/
 function VideoTestimonials() {
+  const [data, setData] = React.useState({
+    heading: "Client Video Feedback",
+    description: "Real feedback from our clients — watch short clips.",
+    videos: [],
+    showCount: 3
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/client_video_feedback`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          description: extra.description || prev.description,
+          videos: Array.isArray(extra.videos) && extra.videos.length ? extra.videos : prev.videos,
+          showCount: typeof extra.showCount === "number" ? extra.showCount : prev.showCount
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   // Carousel: show 3 videos at once on md+ and 1 on mobile.
   // Play videos sequentially: when one finishes, the next starts; when group ends, advance to next group.
   const [isMdUp, setIsMdUp] = useState(
@@ -1795,17 +1824,19 @@ function VideoTestimonials() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const baseVideos = [
-    "test3.mp4",
-    "test6.mp4",
-    "test4.mp4",
-    "test5.mp4",
-    "test1.mp4",
-    "test2.mp4",
-  ];
+  const baseVideos = data.videos.length > 0 
+    ? data.videos.map(v => v.dataUrl || v.url || "")
+    : [
+      "test3.mp4",
+      "test6.mp4",
+      "test4.mp4",
+      "test5.mp4",
+      "test1.mp4",
+      "test2.mp4",
+    ];
 
   const slidesCount = baseVideos.length;
-  const slidesPerView = isMdUp ? 3 : 1;
+  const slidesPerView = isMdUp ? data.showCount : 1;
   const groupCount = Math.max(1, Math.ceil(slidesCount / slidesPerView));
 
   const [groupIndex, setGroupIndex] = useState(0); // which group/page is visible
@@ -1869,7 +1900,10 @@ function VideoTestimonials() {
 
   return (
     <section className="py-20 bg-black text-white px-6" data-testid="video-testimonials">
-      <h2 className="text-3xl md:text-5xl font-bold text-center mb-10">Client Video Feedback</h2>
+      <h2 className="text-3xl md:text-5xl font-bold text-center mb-10">{data.heading}</h2>
+      {data.description && (
+        <p className="text-center text-zinc-400 mb-6 max-w-2xl mx-auto">{data.description}</p>
+      )}
 
       <div className="relative max-w-5xl mx-auto overflow-hidden rounded-2xl border border-zinc-800 shadow-2xl">
         <div
