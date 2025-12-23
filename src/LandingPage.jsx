@@ -1393,7 +1393,10 @@ function Bonuses() {
 
             <h3 className="text-sm md:text-2xl font-semibold mb-1 text-yellow-700">{item.title}</h3>
 
-            <p className="text-zinc-600 text-sm md:text-base">{item.subtitle}</p>
+            <p
+              className="text-zinc-600 text-sm md:text-base"
+              dangerouslySetInnerHTML={{ __html: item.subtitle.replace(/\n/g, '<br />') }}
+            />
           </motion.div>
         ))}
       </div>
