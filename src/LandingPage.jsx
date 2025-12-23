@@ -2010,6 +2010,62 @@ function FAQ() {
 }
 
 /*********************************
+ * FINAL CTA / REGISTER
+ *********************************/
+function FinalCTA() {
+  const [data, setData] = React.useState({
+    heading: "Ready For Personal 1-on-1 Guidance?",
+    subheading: "Reserve your private session now — limited seats available.",
+    buttonText: "Register Now @ ₹99",
+    amount: 99,
+    bgColor: "bg-yellow-50",
+    headingColor: "text-yellow-700",
+    subheadingColor: "text-zinc-700",
+    buttonClassName: "px-10 py-4 text-black font-extrabold text-lg rounded-3xl bg-gradient-to-r from-[#FFD700] to-[#FFB300] shadow-[0_0_18px_rgba(255,200,0,0.7)] hover:shadow-[0_0_30px_rgba(255,200,0,1)] transition-all duration-300"
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/final_cta_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          subheading: extra.subheading || prev.subheading,
+          buttonText: extra.buttonText || prev.buttonText,
+          amount: extra.amount !== undefined ? extra.amount : prev.amount,
+          bgColor: extra.bgColor || prev.bgColor,
+          headingColor: extra.headingColor || prev.headingColor,
+          subheadingColor: extra.subheadingColor || prev.subheadingColor,
+          buttonClassName: extra.buttonClassName || prev.buttonClassName
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <section className={`py-12 ${data.bgColor} px-6 border-t border-yellow-200 text-center`}>
+      <div className="max-w-3xl mx-auto">
+        <h3 className={`text-2xl md:text-3xl font-bold ${data.headingColor} mb-3`}>{data.heading}</h3>
+        <p className={`${data.subheadingColor} mb-6`}>{data.subheading}</p>
+        <RegisterButton
+          amount={data.amount}
+          label={data.buttonText}
+          className={data.buttonClassName}
+        />
+      </div>
+    </section>
+  );
+}
+
+/*********************************
  * PRIVACY FOOTER
  *********************************/
 function PrivacyFooter() {
@@ -2354,19 +2410,7 @@ export default function LandingPage() {
         <Guarantee />
         <VideoTestimonials />
         <FAQ />
-
-        {/* Register CTA under FAQ */}
-        <section className="py-12 bg-yellow-50 px-6 border-t border-yellow-200 text-center">
-          <div className="max-w-3xl mx-auto">
-            <h3 className="text-2xl md:text-3xl font-bold text-yellow-700 mb-3">Ready For Personal 1-on-1 Guidance?</h3>
-            <p className="text-zinc-700 mb-6">Reserve your private session now — limited seats available.</p>
-            <RegisterButton
-              amount={99}
-              label={"Register Now @ ₹99"}
-              className={"px-10 py-4 text-black font-extrabold text-lg rounded-3xl bg-gradient-to-r from-[#FFD700] to-[#FFB300] shadow-[0_0_18px_rgba(255,200,0,0.7)] hover:shadow-[0_0_30px_rgba(255,200,0,1)] transition-all duration-300"}
-            />
-          </div>
-        </section>
+        <FinalCTA />
         <ScrollEndPopup />
         <PrivacyFooter />
         <StickyOfferBar timeLeft={timeLeft} format={format} />
