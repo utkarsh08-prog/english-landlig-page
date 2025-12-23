@@ -1659,54 +1659,100 @@ function CoachStats() {
  * GUARANTEE SECTION
  *********************************/
 function Guarantee() {
+  const [data, setData] = React.useState({
+    heroImageUrl: "",
+    topImageAlt: "Guarantee Badge",
+    heading: "Our Guarantee",
+    subHeading: "A Promise",
+    highlightedLine: "No Questions Asked Money Back Guarantee",
+    bodyParagraphs: [
+      "Join today for just ₹99 and experience a powerful business-growth session. If you feel it did not deliver value, we will give your money back — no questions asked. 100% satisfaction or full refund!",
+      "Dear Participant,\n\nI am here to guide you personally and share powerful business insights that can help you take your business to the next level.",
+      "If not satisfied, request a refund within 1 Hour of session — no questions asked. Simply email refund@arunlive.com."
+    ],
+    signatureName: "Arunn Guptaa",
+    ctaText: "Register Now At ₹99/- Only",
+    ctaLink: "#",
+    ctaBg: "#F59E0B",
+    ctaTextColor: "#111827",
+    cardBg: "#ffffff",
+    cardBorder: "#F3E0B0",
+    headingColor: "#D97706"
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/guarantee_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heroImageUrl: section.imageUrl || extra.heroImageDataUrl || prev.heroImageUrl,
+          topImageAlt: extra.topImageAlt || prev.topImageAlt,
+          heading: extra.heading || prev.heading,
+          subHeading: extra.subHeading || prev.subHeading,
+          highlightedLine: extra.highlightedLine || prev.highlightedLine,
+          bodyParagraphs: Array.isArray(extra.bodyParagraphs) && extra.bodyParagraphs.length ? extra.bodyParagraphs : prev.bodyParagraphs,
+          signatureName: extra.signatureName || prev.signatureName,
+          ctaText: extra.ctaText || prev.ctaText,
+          ctaLink: extra.ctaLink || prev.ctaLink,
+          ctaBg: extra.ctaBg || prev.ctaBg,
+          ctaTextColor: extra.ctaTextColor || prev.ctaTextColor,
+          cardBg: extra.cardBg || prev.cardBg,
+          cardBorder: extra.cardBorder || prev.cardBorder,
+          headingColor: extra.headingColor || prev.headingColor
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section
       id="guarantee-section"
       className="py-20 px-6 bg-white text-black border-t border-yellow-200"
       data-testid="guarantee"
     >
-      <div className="relative max-w-4xl mx-auto bg-white p-10 rounded-3xl border border-yellow-200 shadow-xl pt-20">
+      <div className="relative max-w-4xl mx-auto p-10 rounded-3xl shadow-xl pt-20" style={{ background: data.cardBg, borderColor: data.cardBorder, borderWidth: '1px', borderStyle: 'solid' }}>
 
         {/* Floating Logo */}
         <div className="absolute -top-20 left-1/2 -translate-x-1/2">
           <img
-            src="/money-back.png"
-            alt="Money Back Guarantee"
+            src={data.heroImageUrl || "/money-back.png"}
+            alt={data.topImageAlt}
             className="w-44 h-auto drop-shadow-xl"
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
         </div>
 
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6 text-orange-500">
-          Our Guarantee
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6" style={{ color: data.headingColor }}>
+          {data.heading}
         </h2>
 
-        <p className="text-center text-zinc-600 max-w-2xl mx-auto mb-8">
-          Join today for just ₹99 and experience a powerful business-growth
-          session. If you feel it did not deliver value, we will give your
-          money back — no questions asked. 100% satisfaction or full refund!
-        </p>
+        {data.bodyParagraphs[0] && (
+          <p className="text-center text-zinc-600 max-w-2xl mx-auto mb-8">
+            {data.bodyParagraphs[0]}
+          </p>
+        )}
 
         <h3 className="text-2xl font-bold text-center text-orange-400 mb-2">
-          A Promise
+          {data.subHeading}
         </h3>
 
         <div className="w-16 h-1 bg-orange-400 mx-auto mb-6" />
 
         <h4 className="text-xl font-bold text-center text-yellow-600 mb-6">
-          No Questions Asked Money Back Guarantee
+          {data.highlightedLine}
         </h4>
 
-        <p className="text-zinc-600 leading-relaxed mb-4">Dear Participant,</p>
-
-        <p className="text-zinc-600 leading-relaxed mb-4">
-          I am here to guide you personally and share powerful business
-          insights that can help you take your business to the next level.
-        </p>
-
-        <p className="text-zinc-600 leading-relaxed mb-6">
-          If not satisfied, request a refund within 1 Hour of session — no questions asked. Simply email <span className="text-orange-300">refund@arunlive.com</span>.
-        </p>
+        {data.bodyParagraphs.slice(1).map((para, i) => (
+          <p key={i} className="text-zinc-600 leading-relaxed mb-4" dangerouslySetInnerHTML={{ __html: para.replace(/\n/g, '<br />') }} />
+        ))}
 
         <p className="text-zinc-600 mb-6">
           Yours, <br />
@@ -1714,14 +1760,17 @@ function Guarantee() {
             className="text-3xl text-yellow-600 italic font-semibold tracking-wide"
             style={{ fontFamily: "cursive" }}
           >
-            Arunn Guptaa
+            {data.signatureName}
           </span>
         </p>
 
         <div className="text-center mt-8">
-          <RegisterButton className={
-            "px-8 py-3 md:px-12 md:py-4 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold text-sm md:text-base rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition"
-          } />
+          <RegisterButton 
+            label={data.ctaText}
+            className={
+              "px-8 py-3 md:px-12 md:py-4 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold text-sm md:text-base rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition"
+            } 
+          />
         </div>
       </div>
     </section>
