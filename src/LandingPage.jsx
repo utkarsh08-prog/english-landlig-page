@@ -1367,19 +1367,40 @@ function Bonuses() {
  * TRUST BADGES
  *********************************/
 function TrustBadges() {
+  const [boxes, setBoxes] = React.useState([
+    { id: "pb1", text: "Secure Payment", bg: "#ffffff", textColor: "#065f46" },
+    { id: "pb2", text: "100% Privacy Safe", bg: "#ffffff", textColor: "#065f46" },
+    { id: "pb3", text: "Money-Back Guarantee", bg: "#ffffff", textColor: "#065f46" },
+  ]);
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/pricing_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        const extra = section?.extraData || {};
+        if (Array.isArray(extra.topBoxes) && extra.topBoxes.length) {
+          setBoxes(extra.topBoxes);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="w-full flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 py-6 sm:py-8 bg-white border-t border-yellow-200">
-      <div className="px-4 py-2 sm:px-6 sm:py-4 bg-white border border-yellow-300 rounded-lg shadow text-yellow-800 font-semibold text-sm sm:text-base text-center">
-        ✅ Secure Payment
-      </div>
-
-      <div className="px-4 py-2 sm:px-6 sm:py-4 bg-white border border-yellow-300 rounded-lg shadow text-yellow-800 font-semibold text-sm sm:text-base text-center">
-        ✅ 100% Privacy Safe
-      </div>
-
-      <div className="px-4 py-2 sm:px-6 sm:py-4 bg-white border border-yellow-300 rounded-lg shadow text-yellow-800 font-semibold text-sm sm:text-base text-center">
-        ✅ Money-Back Guarantee
-      </div>
+      {boxes.map((bx) => (
+        <div
+          key={bx.id}
+          className="px-4 py-2 sm:px-6 sm:py-4 border rounded-lg shadow font-semibold text-sm sm:text-base text-center"
+          style={{ background: bx.bg || "#fff", borderColor: "#F3E0B0", color: bx.textColor || "#065f46" }}
+        >
+          ✅ {bx.text}
+        </div>
+      ))}
     </div>
   );
 }
@@ -1388,25 +1409,52 @@ function TrustBadges() {
  * CTA SECTION
  *********************************/
 function CTA() {
+  const [text, setText] = React.useState({
+    heading: "Start Your 1-on-1 Guidance Journey",
+    subheading:
+      "Book your 1-on-1 session and get personalized Guidance built only for your business.",
+    headingColor: "#A95600",
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/pricing_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        const extra = section?.extraData || {};
+        setText((prev) => ({
+          ...prev,
+          heading: extra.heading || section?.title || prev.heading,
+          subheading: extra.subheading || prev.subheading,
+          headingColor: extra.headingColor || prev.headingColor,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section className="py-12 text-center bg-white border-t border-yellow-200 px-6" data-testid="cta">
       <motion.h2
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-4xl md:text-6xl font-bold mb-6 text-yellow-700"
+        className="text-4xl md:text-6xl font-bold mb-6"
+        style={{ color: text.headingColor }}
       >
-        Start Your 1-on-1 Guidance Journey
+        {text.heading}
       </motion.h2>
 
-      <motion.p
+      <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.6 }}
         className="text-lg md:text-2xl text-zinc-700 max-w-3xl mx-auto"
-      >
-        Book your 1-on-1 session and get personalized Guidance built only for your business.
-      </motion.p>
+        dangerouslySetInnerHTML={{ __html: text.subheading }}
+      />
     </section>
   );
 }
