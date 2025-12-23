@@ -181,6 +181,44 @@ function ProgressBar() {
 
 function ExitPopup() {
   const [open, setOpen] = useState(false);
+  const [data, setData] = React.useState({
+    heading: "Wait! Before You Leave",
+    subheading: "Your ₹99 Guidance session is still available. Don't miss this chance!",
+    continueButtonText: "Continue",
+    registerButtonText: "Register Now",
+    registerAmount: 99,
+    headingColor: "text-yellow-700",
+    subheadingColor: "text-zinc-700",
+    bgColor: "bg-white",
+    borderColor: "border-yellow-300"
+  });
+
+  React.useEffect(() => {
+    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "http://localhost:5000";
+    const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+    const headers = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) headers["x-api-key"] = ADMIN_API_KEY;
+
+    fetch(`${ADMIN_API_URL}/api/sections/exit_popup_section`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((section) => {
+        if (!section) return;
+        const extra = section.extraData || {};
+        setData((prev) => ({
+          ...prev,
+          heading: extra.heading || prev.heading,
+          subheading: extra.subheading || prev.subheading,
+          continueButtonText: extra.continueButtonText || prev.continueButtonText,
+          registerButtonText: extra.registerButtonText || prev.registerButtonText,
+          registerAmount: extra.registerAmount !== undefined ? extra.registerAmount : prev.registerAmount,
+          headingColor: extra.headingColor || prev.headingColor,
+          subheadingColor: extra.subheadingColor || prev.subheadingColor,
+          bgColor: extra.bgColor || prev.bgColor,
+          borderColor: extra.borderColor || prev.borderColor
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Don't show again if the user already dismissed it once.
@@ -204,14 +242,14 @@ function ExitPopup() {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center border border-yellow-300">
-        <h3 className="text-2xl font-bold mb-4 text-yellow-700">Wait! Before You Leave</h3>
-        <p className="text-zinc-700 mb-6">
-          Your ₹99 Guidance session is still available. Don't miss this chance!
+      <div className={`${data.bgColor} p-8 rounded-2xl shadow-xl max-w-md text-center border ${data.borderColor}`}>
+        <h3 className={`text-2xl font-bold mb-4 ${data.headingColor}`}>{data.heading}</h3>
+        <p className={`${data.subheadingColor} mb-6`}>
+          {data.subheading}
         </p>
         <div className="mt-4 flex justify-center gap-4">
           <PrimaryButton
-            label="Continue"
+            label={data.continueButtonText}
             onClick={() => {
               try {
                 localStorage.setItem("exitPopupDismissed", "1");
@@ -220,8 +258,8 @@ function ExitPopup() {
             }}
           />
           <RegisterButton
-            amount={99}
-            label="Register Now"
+            amount={data.registerAmount}
+            label={data.registerButtonText}
             className="px-6 py-2 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-semibold rounded-2xl shadow-lg hover:shadow-xl"
           />
         </div>
@@ -2017,7 +2055,6 @@ function FinalCTA() {
     heading: "Ready For Personal 1-on-1 Guidance?",
     subheading: "Reserve your private session now — limited seats available.",
     buttonText: "Register Now @ ₹99",
-    buttonBadge: "Limited",
     amount: 99,
     bgColor: "bg-yellow-50",
     headingColor: "text-yellow-700",
@@ -2041,7 +2078,6 @@ function FinalCTA() {
           heading: extra.heading || prev.heading,
           subheading: extra.subheading || prev.subheading,
           buttonText: extra.buttonText || prev.buttonText,
-          buttonBadge: extra.buttonBadge !== undefined ? extra.buttonBadge : prev.buttonBadge,
           amount: extra.amount !== undefined ? extra.amount : prev.amount,
           bgColor: extra.bgColor || prev.bgColor,
           headingColor: extra.headingColor || prev.headingColor,
@@ -2057,19 +2093,11 @@ function FinalCTA() {
       <div className="max-w-3xl mx-auto">
         <h3 className={`text-2xl md:text-3xl font-bold ${data.headingColor} mb-3`}>{data.heading}</h3>
         <p className={`${data.subheadingColor} mb-6`}>{data.subheading}</p>
-        <div className="inline-block relative">
-          {data.buttonBadge && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
-              {data.buttonBadge}
-            </span>
-          )}
-          <RegisterButton
-            amount={data.amount}
-            label={data.buttonText}
-            className={data.buttonClassName}
-            hideBadge={true}
-          />
-        </div>
+        <RegisterButton
+          amount={data.amount}
+          label={data.buttonText}
+          className={data.buttonClassName}
+        />
       </div>
     </section>
   );

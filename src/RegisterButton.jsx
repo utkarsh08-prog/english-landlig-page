@@ -21,7 +21,7 @@ function loadRazorpayScript() {
   });
 }
 
-const RegisterButton = ({ amount = 99, className = "btn", label = "Register Now At ₹99/- Only", hideBadge = false }) => {
+const RegisterButton = ({ amount = 99, className = "btn", label = "Register Now At ₹99/- Only" }) => {
   const [loading, setLoading] = useState(false);
 
   const handlePayment = async () => {
@@ -99,9 +99,7 @@ const RegisterButton = ({ amount = 99, className = "btn", label = "Register Now 
 
             <span className="flex items-center gap-2 relative z-10">
               {label ?? `Register Now @ ₹${amount}`}
-              {!hideBadge && (
-                <span className="text-sm font-semibold px-2 py-0.5 bg-red-600 text-yellow-300 rounded-md animate-priceBlink">Limited</span>
-              )}
+              <span className="text-sm font-semibold px-2 py-0.5 bg-red-600 text-yellow-300 rounded-md animate-priceBlink">Limited</span>
               <span className="text-xl animate-arrowMove">👈</span>
             </span>
           </>
