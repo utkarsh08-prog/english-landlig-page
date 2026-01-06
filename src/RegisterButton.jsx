@@ -41,7 +41,7 @@ const RegisterButton = ({ amount = 99, className = "btn", label = "Register Now 
 
       // 2️⃣ Open Razorpay checkout (testing options)
       const options = {
-        key: "rzp_test_RfEZA7cY0icEUx",
+        key: import.meta.env.VITE_RAZORPAY_KEY || "rzp_live_S0VkMnqosqCS2C",
         amount: order.amount, // amount from backend (in paise)
         currency: "INR",
         name: "Arunn Guptaa",

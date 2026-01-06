@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import useSoldOutReset from "./hooks/useSoldOutReset";
+import SoldOutResetTimer from "./components/SoldOutResetTimer";
 
 export default function SessionBooking() {
   const [loading, setLoading] = useState(false);
+  const { markSoldOut, isSoldOut } = useSoldOutReset();
 
   useEffect(() => {
     // Ensure Calendly script is loaded once
@@ -54,6 +57,9 @@ export default function SessionBooking() {
         order_id: order.id,
         handler: function (response) {
           try {
+            // Mark user as sold out (20-minute reset timer starts)
+            markSoldOut();
+            
             // After successful payment, open Calendly popup to let user confirm the slot.
             alert("Payment successful — please confirm your slot in the Calendly popup.");
             if (window.Calendly && typeof window.Calendly.initPopupWidget === "function") {
@@ -87,10 +93,14 @@ export default function SessionBooking() {
         <div className="mb-4">
           <button
             onClick={openPayment}
-            disabled={loading}
-            className="w-full md:w-1/2 mx-auto block bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-6 rounded-lg shadow"
+            disabled={loading || isSoldOut}
+            className={`w-full md:w-1/2 mx-auto block font-bold py-3 px-6 rounded-lg shadow transition ${
+              isSoldOut 
+                ? "bg-gray-400 text-gray-700 cursor-not-allowed" 
+                : "bg-yellow-400 hover:bg-yellow-300 text-black"
+            }`}
           >
-            {loading ? "Processing…" : "Pay ₹99 to Confirm Session"}
+            {loading ? "Processing…" : isSoldOut ? "Coming Back Soon..." : "Pay ₹99 to Confirm Session"}
           </button>
           <p className="text-center mt-2 text-zinc-600 text-sm">* Fees refundable if you aren't satisfied</p>
         </div>
@@ -103,6 +113,9 @@ export default function SessionBooking() {
 
         <p className="text-center mt-6 text-zinc-600 text-sm">If the scheduler above doesn't appear, open the Calendly link directly: <a className="text-yellow-700 underline" href="https://calendly.com/linksvardha/60min" target="_blank" rel="noreferrer">Calendly — 60min</a></p>
       </div>
+
+      {/* Show reset timer notification when user is in sold-out period */}
+      <SoldOutResetTimer />
     </div>
   );
 }
